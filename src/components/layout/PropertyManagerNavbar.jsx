@@ -1,48 +1,78 @@
-// frontend/src/components/layout/PropertyManagerNavbar.jsx
-
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; // Assuming AuthContext for logout and user info
-import { Bell, UserCircle, LogOut } from 'lucide-react'; // Icons
+import { Bell, UserCircle, LogOut } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
+import { useGlobalAlert } from '../../context/GlobalAlertContext';
 
-/**
- * PropertyManagerNavbar component for PM-specific pages.
- * Displays a top navigation with user info, notifications, and logout.
- */
+const PRIMARY_COLOR = '#219377';
+const SECONDARY_COLOR = '#ffbd59';
+
 function PropertyManagerNavbar() {
   const { user, logout } = useAuth();
+  const { showSuccess } = useGlobalAlert();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    showSuccess('You have been logged out.');
+    navigate('/');
+  };
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-md">
-      {/* Logo/Brand Name */}
-      <div className="text-2xl font-bold text-green-700">
-        <Link to="/pm/dashboard">Manager Portal</Link>
-      </div>
-
-      {/* Right side: Icons and User Info */}
-      <div className="flex items-center space-x-6">
-        {/* Notifications Icon (Example) */}
-        <Link to="/pm/notifications" className="relative text-gray-600 hover:text-blue-600 transition duration-150">
-          <Bell className="w-6 h-6" />
-          {/* You might add a notification count badge here */}
-          {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span> */}
+    <header
+      className="h-16 flex items-center justify-between px-6 flex-shrink-0 shadow-sm"
+      style={{ background: "#fff", borderBottom: `2px solid ${PRIMARY_COLOR}10` }}
+    >
+      {/* Left: App Brand */}
+      <div className="flex items-center">
+        <Link to="/pm/dashboard" className="mr-4 flex items-center">
+          <span
+            className="font-extrabold text-xl tracking-tight"
+            style={{ color: PRIMARY_COLOR }}
+          >
+            Manager<span style={{ color: SECONDARY_COLOR }}>Portal</span>
+          </span>
         </Link>
-
-        {/* User Profile Dropdown/Link */}
-        <div className="flex items-center space-x-2 text-gray-700 font-medium">
-          <UserCircle className="w-6 h-6 text-gray-500" />
-          <span>{user?.name || user?.email || 'Property Manager'}</span>
-          <Link to="/pm/profile" className="text-sm text-blue-600 hover:underline ml-2">View Profile</Link>
-        </div>
-
-        {/* Logout Button */}
-        <button
-          onClick={logout}
-          className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-150 ease-in-out shadow-md"
+      </div>
+      {/* Right: Actions */}
+      <div className="flex items-center space-x-5">
+        <Link
+          to="/pm/notifications"
+          className="p-2 rounded-full transition"
+          style={{
+            color: PRIMARY_COLOR,
+            backgroundColor: "#f0fdfa"
+          }}
+          title="Notifications"
         >
-          <LogOut className="w-5 h-5 mr-2" />
-          Logout
-        </button>
+          <Bell className="w-5 h-5" />
+        </Link>
+        <div style={{ width: 1, height: 32, background: PRIMARY_COLOR + "30" }} />
+        <div className="flex items-center">
+          <div className="text-right mr-3">
+            <p
+              className="text-sm font-semibold"
+              style={{ color: PRIMARY_COLOR }}
+            >
+              {user?.name || user?.email || 'Property Manager'}
+            </p>
+            <p className="text-xs capitalize" style={{ color: SECONDARY_COLOR }}>
+              {user?.role || "Manager"}
+            </p>
+        
+          </div>
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-full transition"
+            style={{
+              color: "#e64848",
+              backgroundColor: "#fde2e5"
+            }}
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </header>
   );

@@ -1,24 +1,18 @@
-import React, { useEffect } from 'react';
-import PropertyManagerNavbar from './PropertyManagerNavbar'; // PM-specific Navbar
-import PropertyManagerSidebar from './PropertyManagerSidebar'; // PM-specific Sidebar
+import React, { useState, useEffect } from 'react';
+import PropertyManagerNavbar from './PropertyManagerNavbar';
+import PropertyManagerSidebar from './PropertyManagerSidebar';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Outlet } from 'react-router-dom';
 
-/**
- * PropertyManagerLayout component provides a consistent layout for all Property Manager-facing pages.
- * It includes a PM-specific navigation bar, a sidebar, and renders its children
- * within the main content area.
- */
 function PropertyManagerLayout() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const authorizedRoles = ['propertymanager', 'landlord', 'admin'];
 
-  // Only navigate after the auth loading is complete, and only from within an effect
   useEffect(() => {
     if (!authLoading && (!user || !authorizedRoles.includes(user.role))) {
-      console.warn('Unauthorized access attempt to PM layout. User role:', user?.role);
       navigate('/login', { replace: true, state: { unauthorized: true } });
     }
   }, [authLoading, user, navigate]);
@@ -31,21 +25,25 @@ function PropertyManagerLayout() {
     );
   }
 
-  // While redirecting, render nothing for unauthorized users
   if (!user || !authorizedRoles.includes(user.role)) {
     return null;
   }
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-800 font-inter antialiased">
-      {/* Sidebar */}
-      <PropertyManagerSidebar />
-
+      <PropertyManagerSidebar isSidebarOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen((v) => !v)} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Navbar */}
+        {/* Hamburger for mobile */}
+        <button
+          className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-full bg-green-700 text-white"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open sidebar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
         <PropertyManagerNavbar />
-
-        {/* Main Content Area */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6 sm:p-8">
           <Outlet />
         </main>

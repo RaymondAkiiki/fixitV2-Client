@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from "react";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
-import Alert from "../../components/common/Alert";
 import Spinner from "../../components/common/Spinner";
 import { User, Lock, Bell, Save, Eye, EyeOff } from "lucide-react";
-
 import { getMyProfile, updateMyProfile } from "../../services/userService";
 import { changePassword } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
+import { useGlobalAlert } from "../../context/GlobalAlertContext";
 
 /**
  * PMProfile allows authenticated users (PMs, landlords, etc.) to view and update their personal profile
  * and change their password. It uses the /users/me backend endpoints for consistency.
  */
+const PRIMARY = "#219377";
+const SECONDARY = "#ffbd59";
+
 function PMProfile() {
-  const { user, setUser } = useAuth(); // Use setUser to update context if needed
+  const { user, setUser } = useAuth();
+  const { showSuccess, showError, showInfo } = useGlobalAlert();
 
   // --- Profile State ---
   const [profileData, setProfileData] = useState({
@@ -25,8 +28,6 @@ function PMProfile() {
   });
   const [profileErrors, setProfileErrors] = useState({});
   const [profileLoading, setProfileLoading] = useState(true);
-  const [profileMessage, setProfileMessage] = useState("");
-  const [profileMessageType, setProfileMessageType] = useState("info");
 
   // --- Password State ---
   const [passwordForm, setPasswordForm] = useState({
@@ -36,8 +37,6 @@ function PMProfile() {
   });
   const [passwordErrors, setPasswordErrors] = useState({});
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [passwordMessage, setPasswordMessage] = useState("");
-  const [passwordMessageType, setPasswordMessageType] = useState("info");
   const [show, setShow] = useState({
     current: false,
     new: false,
@@ -48,7 +47,6 @@ function PMProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       setProfileLoading(true);
-      setProfileMessage('');
       try {
         const data = await getMyProfile();
         setProfileData({
@@ -58,13 +56,13 @@ function PMProfile() {
           notificationsEnabled: data.notificationsEnabled !== undefined ? data.notificationsEnabled : true,
         });
       } catch (err) {
-        setProfileMessageType("error");
-        setProfileMessage("Failed to load profile data. " + (err.response?.data?.message || err.message));
+        showError("Failed to load profile data. " + (err.response?.data?.message || err.message));
       } finally {
         setProfileLoading(false);
       }
     };
     fetchProfile();
+    // eslint-disable-next-line
   }, []);
 
   // --- Profile Data Handlers ---
@@ -75,7 +73,6 @@ function PMProfile() {
       [name]: type === "checkbox" ? checked : value,
     }));
     setProfileErrors((prev) => ({ ...prev, [name]: "" }));
-    setProfileMessage("");
   };
 
   const validateProfileForm = () => {
@@ -91,26 +88,20 @@ function PMProfile() {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     if (!validateProfileForm()) {
-      setProfileMessage("Please correct the errors in your profile information.");
-      setProfileMessageType("error");
+      showError("Please correct the errors in your profile information.");
       return;
     }
     setProfileLoading(true);
-    setProfileMessage('');
-    setProfileMessageType('info');
     try {
       const updatedUser = await updateMyProfile({
         name: profileData.name,
         phone: profileData.phone,
         notificationsEnabled: profileData.notificationsEnabled,
       });
-      // Optionally update AuthContext user object if you want to keep it fresh
       if (setUser) setUser((prev) => ({ ...prev, ...updatedUser }));
-      setProfileMessageType("success");
-      setProfileMessage("Profile updated successfully!");
+      showSuccess("Profile updated successfully!");
     } catch (err) {
-      setProfileMessageType("error");
-      setProfileMessage("Failed to update profile: " + (err.response?.data?.message || err.message));
+      showError("Failed to update profile: " + (err.response?.data?.message || err.message));
     } finally {
       setProfileLoading(false);
     }
@@ -121,7 +112,6 @@ function PMProfile() {
     const { name, value } = e.target;
     setPasswordForm((prev) => ({ ...prev, [name]: value }));
     setPasswordErrors((prev) => ({ ...prev, [name]: "" }));
-    setPasswordMessage("");
   };
 
   const validatePasswordForm = () => {
@@ -138,21 +128,16 @@ function PMProfile() {
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (!validatePasswordForm()) {
-      setPasswordMessage("Please correct the errors in the password form.");
-      setPasswordMessageType("error");
+      showError("Please correct the errors in the password form.");
       return;
     }
     setPasswordLoading(true);
-    setPasswordMessage('');
-    setPasswordMessageType('info');
     try {
       await changePassword(passwordForm.currentPassword, passwordForm.newPassword);
-      setPasswordMessageType("success");
-      setPasswordMessage("Password changed successfully! Please log in with your new password if redirected.");
+      showSuccess("Password changed successfully! Please log in with your new password if redirected.");
       setPasswordForm({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
     } catch (err) {
-      setPasswordMessageType("error");
-      setPasswordMessage("Failed to change password: " + (err.response?.data?.message || err.message));
+      showError("Failed to change password: " + (err.response?.data?.message || err.message));
     } finally {
       setPasswordLoading(false);
     }
@@ -160,30 +145,21 @@ function PMProfile() {
 
   // --- UI ---
   return (
-    <div className="p-4 md:p-8 bg-gray-50 min-h-full">
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2 flex items-center">
-        <User className="w-8 h-8 mr-3 text-green-700" />
+    <div className="p-4 md:p-8 bg-[#f8fafc] min-h-full">
+      <h1 className="text-3xl font-extrabold mb-6 border-b pb-2 flex items-center" style={{ color: PRIMARY }}>
+        <User className="w-8 h-8 mr-3" style={{ color: PRIMARY }} />
         My Profile & Settings
       </h1>
 
       {/* Profile Information Section */}
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 mb-8">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-5 flex items-center">
-          <User className="w-6 h-6 mr-2 text-green-700" />
+      <section className="bg-white p-8 rounded-xl shadow-lg border border-[#e6f7f2] mb-8">
+        <h2 className="text-2xl font-semibold mb-5 flex items-center" style={{ color: PRIMARY }}>
+          <User className="w-6 h-6 mr-2" style={{ color: PRIMARY }} />
           Personal Information
         </h2>
-        {profileMessage && (
-          <Alert
-            type={profileMessageType}
-            message={profileMessage}
-            onClose={() => setProfileMessage("")}
-            className="mb-4"
-          />
-        )}
-
         {profileLoading ? (
           <div className="flex justify-center items-center h-32">
-            <Spinner size="md" color="#219377" />
+            <Spinner size="md" color={PRIMARY} />
           </div>
         ) : (
           <form onSubmit={handleUpdateProfile} className="space-y-6">
@@ -220,7 +196,7 @@ function PMProfile() {
               error={profileErrors.phone}
               disabled={profileLoading}
             />
-            <div className="flex items-center space-x-3 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center space-x-3 mt-4 p-4 bg-[#f6fdfc] rounded-lg border border-[#e6f7f2]">
               <input
                 type="checkbox"
                 id="notificationsEnabled"
@@ -237,8 +213,7 @@ function PMProfile() {
             <div className="flex justify-end mt-6">
               <Button
                 type="submit"
-                variant="primary"
-                className="py-2.5 px-6"
+                className="py-2.5 px-6 rounded-lg bg-[#219377] hover:bg-[#1a7b64] text-white shadow-md transition"
                 loading={profileLoading}
                 disabled={profileLoading}
               >
@@ -247,22 +222,14 @@ function PMProfile() {
             </div>
           </form>
         )}
-      </div>
+      </section>
 
       {/* Change Password Section */}
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 mb-8">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-5 flex items-center">
-          <Lock className="w-6 h-6 mr-2 text-green-700" />
+      <section className="bg-white p-8 rounded-xl shadow-lg border border-[#e6f7f2] mb-8">
+        <h2 className="text-2xl font-semibold mb-5 flex items-center" style={{ color: PRIMARY }}>
+          <Lock className="w-6 h-6 mr-2" style={{ color: PRIMARY }} />
           Change Password
         </h2>
-        {passwordMessage && (
-          <Alert
-            type={passwordMessageType}
-            message={passwordMessage}
-            onClose={() => setPasswordMessage("")}
-            className="mb-4"
-          />
-        )}
         <form onSubmit={handleChangePassword} className="space-y-6">
           {/* Current Password */}
           <div className="relative">
@@ -343,8 +310,7 @@ function PMProfile() {
           <div className="flex justify-end mt-6">
             <Button
               type="submit"
-              variant="secondary"
-              className="py-2.5 px-6"
+              className="py-2.5 px-6 rounded-lg bg-[#ffbd59] hover:bg-[#e7a741] text-[#1c2522] shadow-md transition"
               loading={passwordLoading}
               disabled={passwordLoading}
             >
@@ -352,7 +318,7 @@ function PMProfile() {
             </Button>
           </div>
         </form>
-      </div>
+      </section>
     </div>
   );
 }

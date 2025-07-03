@@ -9,12 +9,12 @@ import { getMyProfile, updateMyProfile } from "../../services/userService";
 import { changePassword } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
 
-/**
- * LandlordProfile allows authenticated users (landlords, landlords, etc.) to view and update their personal profile
- * and change their password. It uses the /users/me backend endpoints for consistency.
- */
+// Branding colors
+const PRIMARY_COLOR = "#219377";
+const SECONDARY_COLOR = "#ffbd59";
+
 function LandlordProfile() {
-  const { user, setUser } = useAuth(); // Use setUser to update context if needed
+  const { user, setUser } = useAuth();
 
   // --- Profile State ---
   const [profileData, setProfileData] = useState({
@@ -104,7 +104,6 @@ function LandlordProfile() {
         phone: profileData.phone,
         notificationsEnabled: profileData.notificationsEnabled,
       });
-      // Optionally update AuthContext user object if you want to keep it fresh
       if (setUser) setUser((prev) => ({ ...prev, ...updatedUser }));
       setProfileMessageType("success");
       setProfileMessage("Profile updated successfully!");
@@ -160,16 +159,21 @@ function LandlordProfile() {
 
   // --- UI ---
   return (
-    <div className="p-4 md:p-8 bg-gray-50 min-h-full">
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2 flex items-center">
-        <User className="w-8 h-8 mr-3 text-green-700" />
+    <div className="p-4 md:p-8 min-h-full" style={{ background: "#f9fafb" }}>
+      <h1 className="text-3xl font-extrabold mb-7 border-b pb-3 flex items-center"
+          style={{ color: PRIMARY_COLOR, borderColor: PRIMARY_COLOR }}>
+        <User className="w-8 h-8 mr-3" style={{ color: SECONDARY_COLOR }} />
         My Profile & Settings
       </h1>
 
       {/* Profile Information Section */}
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 mb-8">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-5 flex items-center">
-          <User className="w-6 h-6 mr-2 text-green-700" />
+      <div
+        className="p-8 rounded-xl shadow-lg border mb-8"
+        style={{ background: "#fff", borderColor: PRIMARY_COLOR + "14" }}
+      >
+        <h2 className="text-2xl font-semibold mb-5 flex items-center"
+            style={{ color: PRIMARY_COLOR }}>
+          <User className="w-6 h-6 mr-2" style={{ color: SECONDARY_COLOR }} />
           Personal Information
         </h2>
         {profileMessage && (
@@ -183,7 +187,7 @@ function LandlordProfile() {
 
         {profileLoading ? (
           <div className="flex justify-center items-center h-32">
-            <Spinner size="md" color="#219377" />
+            <Spinner size="md" color={PRIMARY_COLOR} />
           </div>
         ) : (
           <form onSubmit={handleUpdateProfile} className="space-y-6">
@@ -198,6 +202,7 @@ function LandlordProfile() {
               required
               error={profileErrors.name}
               disabled={profileLoading}
+              style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR }}
             />
             <Input
               label="Email Address"
@@ -208,6 +213,7 @@ function LandlordProfile() {
               disabled={true}
               className="opacity-70 cursor-not-allowed"
               infoText="Email cannot be changed here. Contact support for email updates."
+              style={{ borderColor: PRIMARY_COLOR, color: "#64748b" }}
             />
             <Input
               label="Phone Number"
@@ -219,19 +225,26 @@ function LandlordProfile() {
               placeholder="e.g., +2567xxxxxxxx"
               error={profileErrors.phone}
               disabled={profileLoading}
+              style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR }}
             />
-            <div className="flex items-center space-x-3 mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center space-x-3 mt-4 p-4 rounded-lg border"
+                 style={{ background: "#f6fcfa", borderColor: PRIMARY_COLOR + "30" }}>
               <input
                 type="checkbox"
                 id="notificationsEnabled"
                 name="notificationsEnabled"
                 checked={profileData.notificationsEnabled}
                 onChange={handleProfileChange}
-                className="h-5 w-5 text-[#219377] rounded focus:ring-[#219377] border-gray-300"
+                className="h-5 w-5 rounded focus:ring-2"
+                style={{
+                  accentColor: PRIMARY_COLOR,
+                  borderColor: PRIMARY_COLOR
+                }}
                 disabled={profileLoading}
               />
-              <label htmlFor="notificationsEnabled" className="text-base font-medium text-gray-700 flex items-center">
-                <Bell className="w-5 h-5 mr-2 text-gray-600" /> Receive Email Notifications
+              <label htmlFor="notificationsEnabled" className="text-base font-medium flex items-center"
+                     style={{ color: "#475569" }}>
+                <Bell className="w-5 h-5 mr-2" style={{ color: SECONDARY_COLOR }} /> Receive Email Notifications
               </label>
             </div>
             <div className="flex justify-end mt-6">
@@ -241,6 +254,11 @@ function LandlordProfile() {
                 className="py-2.5 px-6"
                 loading={profileLoading}
                 disabled={profileLoading}
+                style={{
+                  backgroundColor: PRIMARY_COLOR,
+                  color: "#fff",
+                  fontWeight: 600
+                }}
               >
                 <Save className="w-5 h-5 mr-2" /> Save Profile
               </Button>
@@ -250,9 +268,13 @@ function LandlordProfile() {
       </div>
 
       {/* Change Password Section */}
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 mb-8">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-5 flex items-center">
-          <Lock className="w-6 h-6 mr-2 text-green-700" />
+      <div
+        className="p-8 rounded-xl shadow-lg border mb-8"
+        style={{ background: "#fff", borderColor: PRIMARY_COLOR + "14" }}
+      >
+        <h2 className="text-2xl font-semibold mb-5 flex items-center"
+            style={{ color: PRIMARY_COLOR }}>
+          <Lock className="w-6 h-6 mr-2" style={{ color: SECONDARY_COLOR }} />
           Change Password
         </h2>
         {passwordMessage && (
@@ -278,11 +300,13 @@ function LandlordProfile() {
               error={passwordErrors.currentPassword}
               disabled={passwordLoading}
               className="pr-10"
+              style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR }}
             />
             <button
               type="button"
               onClick={() => setShow((prev) => ({ ...prev, current: !prev.current }))}
-              className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors top-8"
+              className="absolute inset-y-0 right-3 flex items-center transition-colors top-8"
+              style={{ color: PRIMARY_COLOR }}
               aria-label={show.current ? "Hide current password" : "Show current password"}
               tabIndex={-1}
             >
@@ -304,11 +328,13 @@ function LandlordProfile() {
               disabled={passwordLoading}
               minLength={8}
               className="pr-10"
+              style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR }}
             />
             <button
               type="button"
               onClick={() => setShow((prev) => ({ ...prev, new: !prev.new }))}
-              className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors top-8"
+              className="absolute inset-y-0 right-3 flex items-center transition-colors top-8"
+              style={{ color: PRIMARY_COLOR }}
               aria-label={show.new ? "Hide new password" : "Show new password"}
               tabIndex={-1}
             >
@@ -329,11 +355,13 @@ function LandlordProfile() {
               error={passwordErrors.confirmNewPassword}
               disabled={passwordLoading}
               className="pr-10"
+              style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR }}
             />
             <button
               type="button"
               onClick={() => setShow((prev) => ({ ...prev, confirm: !prev.confirm }))}
-              className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors top-8"
+              className="absolute inset-y-0 right-3 flex items-center transition-colors top-8"
+              style={{ color: PRIMARY_COLOR }}
               aria-label={show.confirm ? "Hide confirmed new password" : "Show confirmed new password"}
               tabIndex={-1}
             >
@@ -347,6 +375,11 @@ function LandlordProfile() {
               className="py-2.5 px-6"
               loading={passwordLoading}
               disabled={passwordLoading}
+              style={{
+                backgroundColor: SECONDARY_COLOR,
+                color: "#1a3b34",
+                fontWeight: 600
+              }}
             >
               <Save className="w-5 h-5 mr-2" /> Change Password
             </Button>

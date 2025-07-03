@@ -1,9 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
-  Home, FileText, Users, Settings, ClipboardList, UserCircle
+  Home, FileText, Users, Settings, ClipboardList, UserCircle, X
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const roleNav = {
   tenant: [
@@ -31,18 +31,33 @@ const roleNav = {
 const Sidebar = ({ isSidebarOpen, toggleSidebar }) => {
   const { user } = useAuth();
   const { pathname } = useLocation();
+  const sidebarRef = useRef(null);
 
   // Fallback to minimal nav if role not set
   const navItems = roleNav[user?.role] || roleNav.tenant;
 
+  // Prevent background scroll and focus sidebar when open
   useEffect(() => {
     if (isSidebarOpen && window.innerWidth < 768) {
       document.body.style.overflow = "hidden";
+      // Focus for accessibility
+      sidebarRef.current?.focus();
     } else {
       document.body.style.overflow = "auto";
     }
     return () => (document.body.style.overflow = "auto");
   }, [isSidebarOpen]);
+
+  // Allow Esc key to close sidebar on mobile
+  useEffect(() => {
+    const handler = (e) => {
+      if (isSidebarOpen && e.key === "Escape") {
+        toggleSidebar();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isSidebarOpen, toggleSidebar]);
 
   return (
     <>
@@ -51,19 +66,35 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar }) => {
         <div
           className="fixed inset-0 bg-black bg-opacity-40 z-40 md:hidden animate-fade-in"
           onClick={toggleSidebar}
+          aria-label="Close sidebar"
+          tabIndex={-1}
+          role="button"
         />
       )}
 
       {/* Sidebar */}
       <nav
+        ref={sidebarRef}
+        tabIndex={isSidebarOpen ? 0 : -1}
         className={`fixed z-50 inset-y-0 left-0 w-72 bg-gradient-to-b from-[#219377] via-[#219377] to-[#24b388] shadow-xl transform transition-transform duration-300
         flex flex-col
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:z-auto md:shadow-none`}
         aria-label="Sidebar"
+        aria-hidden={!(isSidebarOpen || window.innerWidth >= 768)}
         style={{ transitionTimingFunction: "cubic-bezier(.4,0,.2,1)" }}
       >
+        {/* Mobile Close Button */}
+        <div className="md:hidden flex justify-end px-3 pt-4">
+          <button
+            className="text-white rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-white"
+            onClick={toggleSidebar}
+            aria-label="Close sidebar"
+          >
+            <X size={24} />
+          </button>
+        </div>
         {/* Brand/Header */}
-        <div className="flex items-center gap-2 px-6 pt-8 pb-5 border-b border-[#ffffff22]">
+        <div className="flex items-center gap-2 px-6 pt-6 pb-5 border-b border-[#ffffff22]">
           <img
             src="/logo.png"
             alt="Logo"
@@ -121,57 +152,3 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar }) => {
 };
 
 export default Sidebar;
-
-
-
-
-
-
-// import React from "react";
-// import { NavLink } from "react-router-dom";
-// import { useAuth } from "../context/AuthContext";
-
-// const Sidebar = () => {
-//   const { user } = useAuth();
-
-//   // Role-based links if needed
-//   const navLinks = [
-//     { to: "/dashboard", label: "Dashboard" },
-//     { to: "/properties", label: "Properties" },
-//     { to: "/units", label: "Units" },
-//     { to: "/requests", label: "Requests" },
-//     { to: "/maintenance", label: "Maintenance" },
-//     { to: "/vendors", label: "Vendors" },
-//     { to: "/tenants", label: "Tenants" },
-//     { to: "/notifications", label: "Notifications" },
-//     { to: "/reports", label: "Reports" },
-//     { to: "/profile", label: "My Profile" },
-//   ];
-
-//   // Add admin links if user is admin
-//   if (user?.role === "admin") {
-//     navLinks.push({ to: "/admin/audit-log", label: "Audit Log" });
-//     navLinks.push({ to: "/admin/users", label: "All Users" });
-//   }
-
-//   return (
-//     <aside className="w-60 bg-white shadow-md flex flex-col min-h-screen px-2 py-4">
-//       <div className="font-bold text-2xl mb-6 text-blue-700 px-2">Fixit App</div>
-//       <nav className="flex-1">
-//         {navLinks.map((link) => (
-//           <NavLink
-//             key={link.to}
-//             to={link.to}
-//             className={({ isActive }) =>
-//               `block px-4 py-2 rounded hover:bg-blue-100 ${isActive ? "bg-blue-200 font-semibold" : ""}`
-//             }
-//           >
-//             {link.label}
-//           </NavLink>
-//         ))}
-//       </nav>
-//     </aside>
-//   );
-// };
-
-// export default Sidebar;

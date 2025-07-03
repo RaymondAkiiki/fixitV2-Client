@@ -8,6 +8,10 @@ import { sendInvite, getAllInvites, revokeInvite, resendInvite } from '../../ser
 import { getAllProperties } from '../../services/propertyService';
 import { listUnits } from '../../services/unitService';
 
+// Branding colors
+const PRIMARY_COLOR = '#219377';
+const SECONDARY_COLOR = '#ffbd59';
+
 const InviteManagementPage = () => {
     const [invites, setInvites] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -43,13 +47,12 @@ const InviteManagementPage = () => {
         fetchInvites();
     }, [fetchInvites]);
 
-    // Fetch properties EVERY time modal opens (handles new/changed properties)
+    // Fetch properties every time modal opens (handles new/changed properties)
     useEffect(() => {
         if (showInviteModal) {
             getAllProperties()
                 .then(data => {
                     let props = [];
-                    // Accept several possible data shapes
                     if (Array.isArray(data)) props = data;
                     else if (Array.isArray(data?.properties)) props = data.properties;
                     else if (Array.isArray(data?.data)) props = data.data;
@@ -146,63 +149,115 @@ const InviteManagementPage = () => {
     // Status badge
     const getStatusBadge = (status) => {
         switch ((status || '').toLowerCase()) {
-            case 'pending': return 'bg-yellow-100 text-yellow-800';
-            case 'accepted': return 'bg-green-100 text-green-800';
+            case 'pending': return { bg: "#fef3c7", color: "#a16207" };
+            case 'accepted': return { bg: "#d1fae5", color: PRIMARY_COLOR };
             case 'expired':
-            case 'revoked': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'revoked': return { bg: "#fee2e2", color: "#b91c1c" };
+            default: return { bg: "#f3f4f6", color: "#334155" };
         }
     };
 
-    if (loading) return <div>Loading invites...</div>;
-    if (error) return <div className="text-red-500">{error}</div>;
+    if (loading) return (
+        <div className="flex justify-center items-center h-64">
+            <span className="text-lg font-semibold" style={{ color: PRIMARY_COLOR }}>Loading invites...</span>
+        </div>
+    );
+    if (error) return <div className="text-red-700 bg-red-100 border border-red-300 rounded-lg p-5 text-center font-medium">{error}</div>;
 
     return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-gray-800">Invite Management</h1>
-                <Button onClick={() => setShowInviteModal(true)} icon={<UserPlus className="mr-2" />}>
+        <div className="p-4 md:p-8 min-h-full" style={{ background: "#f9fafb" }}>
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: PRIMARY_COLOR }}>
+                    Invite Management
+                </h1>
+                <Button
+                    onClick={() => setShowInviteModal(true)}
+                    className="flex items-center px-5 py-2 rounded-lg shadow-md"
+                    style={{
+                        backgroundColor: SECONDARY_COLOR,
+                        color: "#222",
+                        fontWeight: 600
+                    }}
+                >
+                    <UserPlus className="mr-2" />
                     Send New Invite
                 </Button>
             </div>
 
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+            <div className="bg-white shadow-lg rounded-xl border" style={{ borderColor: PRIMARY_COLOR + "14" }}>
                 <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                        <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y" style={{ borderColor: PRIMARY_COLOR + "10" }}>
+                        <thead style={{ background: "#f6fcfa" }}>
                             <tr>
-                                <th className="p-4 text-left text-sm font-semibold text-gray-600">Email</th>
-                                <th className="p-4 text-left text-sm font-semibold text-gray-600">Role</th>
-                                <th className="p-4 text-left text-sm font-semibold text-gray-600">Property</th>
-                                <th className="p-4 text-left text-sm font-semibold text-gray-600">Status</th>
-                                <th className="p-4 text-left text-sm font-semibold text-gray-600">Expires</th>
-                                <th className="p-4 text-left text-sm font-semibold text-gray-600">Actions</th>
+                                <th className="p-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: PRIMARY_COLOR }}>Email</th>
+                                <th className="p-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: PRIMARY_COLOR }}>Role</th>
+                                <th className="p-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: PRIMARY_COLOR }}>Property</th>
+                                <th className="p-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: PRIMARY_COLOR }}>Status</th>
+                                <th className="p-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: PRIMARY_COLOR }}>Expires</th>
+                                <th className="p-4 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: PRIMARY_COLOR }}>Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {invites.map((invite) => (
-                                <tr key={invite._id}>
-                                    <td className="p-4 whitespace-nowrap">{invite.email}</td>
-                                    <td className="p-4 whitespace-nowrap capitalize">{invite.roleToInvite || invite.role}</td>
-                                    <td className="p-4 whitespace-nowrap">{invite.property?.name || 'N/A'}</td>
-                                    <td className="p-4 whitespace-nowrap">
-                                        <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${getStatusBadge(invite.status)}`}>
-                                            {invite.status}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 whitespace-nowrap text-gray-500 text-xs">
-                                        {invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : ''}
-                                    </td>
-                                    <td className="p-4 whitespace-nowrap space-x-2">
-                                        {invite.status && invite.status.toLowerCase() === 'pending' && (
-                                            <>
-                                                <Button size="sm" variant="outline" onClick={() => handleResend(invite._id)} icon={<RefreshCw className="w-3.5 h-3.5" />} />
-                                                <Button size="sm" variant="danger" onClick={() => handleRevoke(invite._id)} icon={<XCircle className="w-3.5 h-3.5" />} />
-                                            </>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
+                        <tbody>
+                            {invites.map((invite) => {
+                                const badge = getStatusBadge(invite.status);
+                                return (
+                                    <tr key={invite._id} className="hover:bg-[#f0fdfa] transition">
+                                        <td className="p-4 whitespace-nowrap font-medium" style={{ color: PRIMARY_COLOR }}>{invite.email}</td>
+                                        <td className="p-4 whitespace-nowrap capitalize">{invite.roleToInvite || invite.role}</td>
+                                        <td className="p-4 whitespace-nowrap">{invite.property?.name || 'N/A'}</td>
+                                        <td className="p-4 whitespace-nowrap">
+                                            <span className="px-2.5 py-0.5 text-xs font-medium rounded-full" style={{ background: badge.bg, color: badge.color }}>
+                                                {invite.status}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 whitespace-nowrap text-xs" style={{ color: "#64748b" }}>
+                                            {invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : ''}
+                                        </td>
+                                        <td className="p-4 whitespace-nowrap flex flex-col sm:flex-row gap-2">
+                                            {invite.status && invite.status.toLowerCase() === 'pending' && (
+                                                <>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        style={{
+                                                            borderColor: PRIMARY_COLOR,
+                                                            color: PRIMARY_COLOR,
+                                                            background: "#f0fdfa",
+                                                            fontWeight: 500,
+                                                            padding: "0.4rem 1rem",
+                                                            minWidth: 105
+                                                        }}
+                                                        title="Resend Invite"
+                                                        onClick={() => handleResend(invite._id)}
+                                                        className="flex items-center gap-1 justify-center"
+                                                    >
+                                                        <RefreshCw className="w-4 h-4 mr-1" />
+                                                        <span>Resend</span>
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="danger"
+                                                        style={{
+                                                            borderColor: "#e64848",
+                                                            color: "#e64848",
+                                                            background: "#fde2e5",
+                                                            fontWeight: 500,
+                                                            padding: "0.4rem 1rem",
+                                                            minWidth: 105
+                                                        }}
+                                                        title="Revoke Invite"
+                                                        onClick={() => handleRevoke(invite._id)}
+                                                        className="flex items-center gap-1 justify-center"
+                                                    >
+                                                        <XCircle className="w-4 h-4 mr-1" />
+                                                        <span>Revoke</span>
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -216,11 +271,11 @@ const InviteManagementPage = () => {
             <Modal
                 isOpen={showInviteModal}
                 onClose={() => setShowInviteModal(false)}
-                title="Send New Invite"
+                title={<span style={{ color: PRIMARY_COLOR, fontWeight: 700 }}>Send New Invite</span>}
             >
                 <form onSubmit={handleSendInvite} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Recipient Email</label>
+                        <label className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>Recipient Email</label>
                         <input
                             type="email"
                             name="email"
@@ -228,16 +283,18 @@ const InviteManagementPage = () => {
                             onChange={handleFormChange}
                             required
                             className="mt-1 w-full p-2 border rounded-md"
+                            style={{ borderColor: PRIMARY_COLOR }}
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Role</label>
+                        <label className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>Role</label>
                         <select
                             name="role"
                             value={inviteForm.role}
                             onChange={handleFormChange}
                             required
                             className="mt-1 w-full p-2 border rounded-md"
+                            style={{ borderColor: PRIMARY_COLOR }}
                         >
                             <option value="tenant">Tenant</option>
                             <option value="propertymanager">Property Manager</option>
@@ -245,25 +302,24 @@ const InviteManagementPage = () => {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Property</label>
+                        <label className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>Property</label>
                         <select
                             name="propertyId"
                             value={inviteForm.propertyId}
                             onChange={handleFormChange}
                             required
                             className="mt-1 w-full p-2 border rounded-md"
+                            style={{ borderColor: PRIMARY_COLOR }}
                         >
                             <option value="">-- Select a property --</option>
                             {properties.map(p => (
                                 <option key={p._id} value={p._id}>{p.name}</option>
                             ))}
                         </select>
-                        {/* Debug print, remove in prod: */}
-                        {/* <pre>{JSON.stringify(properties, null, 2)}</pre> */}
                     </div>
                     {inviteForm.role === 'tenant' && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Unit</label>
+                            <label className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>Unit</label>
                             <select
                                 name="unitId"
                                 value={inviteForm.unitId}
@@ -271,6 +327,7 @@ const InviteManagementPage = () => {
                                 required
                                 disabled={loadingUnits}
                                 className="mt-1 w-full p-2 border rounded-md"
+                                style={{ borderColor: PRIMARY_COLOR }}
                             >
                                 <option value="">{loadingUnits ? 'Loading units...' : '-- Select a unit --'}</option>
                                 {units.map(u =>
@@ -284,7 +341,12 @@ const InviteManagementPage = () => {
                         <Button
                             type="button"
                             onClick={() => setShowInviteModal(false)}
-                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded-lg"
+                            className="py-2 px-4 rounded-lg"
+                            style={{
+                                backgroundColor: "#e4e4e7",
+                                color: PRIMARY_COLOR,
+                                fontWeight: 600
+                            }}
                         >
                             Cancel
                         </Button>
@@ -292,6 +354,12 @@ const InviteManagementPage = () => {
                             type="submit"
                             icon={<Send className="mr-2" />}
                             disabled={sending}
+                            className="py-2 px-4 rounded-lg"
+                            style={{
+                                backgroundColor: SECONDARY_COLOR,
+                                color: "#1a3b34",
+                                fontWeight: 600
+                            }}
                         >
                             {sending ? 'Sending...' : 'Send Invite'}
                         </Button>

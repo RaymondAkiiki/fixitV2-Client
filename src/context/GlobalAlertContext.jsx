@@ -1,5 +1,5 @@
 
-// frontend/src/contexts/GlobalAlertContext.jsx
+// frontend/src/context/GlobalAlertContext.jsx
 
 // This context provides a global mechanism for displaying alert messages (success, error, info).
 // It's useful for showing transient feedback to the user after an action.

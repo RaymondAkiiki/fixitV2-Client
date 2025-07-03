@@ -1,27 +1,20 @@
-// frontend/src/pages/landlord/CreateEditPropertyPage.jsx
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../../components/common/Button";
-import { Building, Save, XCircle } from "lucide-react"; // Icons
-
-// Import updated service functions
+import { Building, Save, XCircle } from "lucide-react";
 import { createProperty, getPropertyById, updateProperty } from "../../services/propertyService";
+import { useGlobalAlert } from "../../context/GlobalAlertContext";
 
-// Helper for displaying messages to user
-const showMessage = (msg, type = 'info') => {
-  console.log(`${type.toUpperCase()}: ${msg}`);
-  alert(msg); // Fallback to alert
-};
+// Brand Colors
+const PRIMARY_COLOR = "#219377";
+const PRIMARY_DARK = "#197b63";
+const SECONDARY_COLOR = "#ffbd59";
 
-/**
- * CreateEditPropertyPage allows Property Managers to add new properties or
- * edit existing ones.
- */
 function CreateEditPropertyPage() {
-  const { propertyId } = useParams(); // Will be undefined for creation, string for editing
+  const { propertyId } = useParams();
   const navigate = useNavigate();
   const isEditMode = !!propertyId;
+  const { showSuccess, showError } = useGlobalAlert();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -55,20 +48,21 @@ function CreateEditPropertyPage() {
             details: data.details || ""
           });
         } catch (err) {
-          setError("Failed to load property data for editing. " + (err.response?.data?.message || err.message));
-          console.error("Fetch property for edit error:", err);
+          const msg = err.response?.data?.message || err.message;
+          setError("Failed to load property data for editing. " + msg);
+          showError("Failed to load property data for editing. " + msg);
         } finally {
           setLoading(false);
         }
       };
       fetchProperty();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId, isEditMode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormErrors(prev => ({ ...prev, [name]: '' })); // Clear error on change
-
+    setFormErrors(prev => ({ ...prev, [name]: '' }));
     if (name.startsWith("address.")) {
       const addressField = name.split(".")[1];
       setFormData(f => ({
@@ -85,7 +79,6 @@ function CreateEditPropertyPage() {
     if (!formData.name.trim()) errors.name = "Property name is required.";
     if (!formData.address.city.trim()) errors["address.city"] = "City is required.";
     if (!formData.address.country.trim()) errors["address.country"] = "Country is required.";
-    // Add more validation rules as needed (e.g., max lengths)
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -94,122 +87,148 @@ function CreateEditPropertyPage() {
     e.preventDefault();
     setError(null);
     if (!validateForm()) {
-      showMessage("Please correct the form errors.", 'error');
+      showError("Please correct the form errors.");
       return;
     }
-
     setLoading(true);
     try {
       if (isEditMode) {
         await updateProperty(propertyId, formData);
-        showMessage("Property updated successfully!", 'success');
+        showSuccess("Property updated successfully!");
       } else {
         await createProperty(formData);
-        showMessage("Property created successfully!", 'success');
+        showSuccess("Property created successfully!");
       }
-      navigate('/landlord/properties'); // Redirect to properties list after success
+      navigate('/landlord/properties');
     } catch (err) {
       const msg = err.response?.data?.message || err.message;
       setError(`Failed to ${isEditMode ? 'update' : 'create'} property: ${msg}`);
-      showMessage(`Failed to ${isEditMode ? 'update' : 'create'} property: ${msg}`, 'error');
-      console.error(`${isEditMode ? 'Update' : 'Create'} property error:`, err);
+      showError(`Failed to ${isEditMode ? 'update' : 'create'} property: ${msg}`);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading && isEditMode) { // Only show loading overlay for edit mode initial fetch
+  if (loading && isEditMode) {
     return (
-      
       <div className="flex justify-center items-center h-full">
-        <p className="text-xl text-gray-600">Loading property data...</p>
+        <p className="text-xl" style={{ color: PRIMARY_COLOR + "99" }}>Loading property data...</p>
       </div>
-      
     );
   }
 
   return (
-  
-    <div className="p-4 md:p-8 bg-gray-50 min-h-full">
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2 flex items-center">
-        <Building className="w-8 h-8 mr-3 text-green-700" />
-        {isEditMode ? 'Edit Property' : 'Add New Property'}
+    <div className="p-4 md:p-8 min-h-full" style={{ background: "#f9fafb" }}>
+      <h1
+        className="text-3xl font-extrabold mb-7 border-b pb-3 flex items-center"
+        style={{ color: PRIMARY_COLOR, borderColor: PRIMARY_COLOR }}
+      >
+        <Building className="w-8 h-8 mr-3" style={{ color: SECONDARY_COLOR }} />
+        {isEditMode ? "Edit Property" : "Add New Property"}
       </h1>
 
-      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-        <strong className="font-bold">Error!</strong>
-        <span className="block sm:inline"> {error}</span>
-      </div>}
+      {error && (
+        <div
+          className="px-4 py-3 rounded relative mb-4 flex items-center"
+          style={{
+            backgroundColor: "#fed7d7",
+            border: "1.5px solid #f56565",
+            color: "#9b2c2c"
+          }}
+          role="alert"
+        >
+          <strong className="font-bold mr-2">Error!</strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
 
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 max-w-3xl mx-auto">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div
+        className="p-8 rounded-xl shadow-lg border max-w-3xl mx-auto"
+        style={{ background: "#fff", borderColor: PRIMARY_COLOR + "20" }}
+      >
+        <form onSubmit={handleSubmit} className="space-y-8">
           <div>
-            <label htmlFor="propertyName" className="block text-sm font-medium text-gray-700 mb-1">Property Name:</label>
+            <label htmlFor="propertyName" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>
+              Property Name:
+            </label>
             <input
               type="text"
               id="propertyName"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className={`w-full px-4 py-2 border ${formErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+              className={`w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none ${formErrors.name ? 'border-red-500' : 'border-[#219377]'}`}
+              style={{ color: PRIMARY_COLOR }}
               required
               disabled={loading}
             />
             {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
           </div>
 
-          <fieldset className="border border-gray-200 p-4 rounded-lg">
-            <legend className="text-lg font-medium text-gray-800 px-2 -ml-2">Address</legend>
+          <fieldset className="border p-4 rounded-lg" style={{ borderColor: PRIMARY_COLOR + "20" }}>
+            <legend className="text-lg font-bold px-2 -ml-2" style={{ color: PRIMARY_COLOR }}>Address</legend>
             <div className="space-y-4 mt-2">
               <div>
-                <label htmlFor="addressStreet" className="block text-sm font-medium text-gray-700 mb-1">Street Address:</label>
+                <label htmlFor="addressStreet" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>
+                  Street Address:
+                </label>
                 <input
                   type="text"
                   id="addressStreet"
                   name="address.street"
                   value={formData.address.street}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2 border border-[#219377] rounded-lg shadow-sm focus:outline-none"
+                  style={{ color: PRIMARY_COLOR }}
                   disabled={loading}
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="addressCity" className="block text-sm font-medium text-gray-700 mb-1">City:</label>
+                  <label htmlFor="addressCity" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>
+                    City:
+                  </label>
                   <input
                     type="text"
                     id="addressCity"
                     name="address.city"
                     value={formData.address.city}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 border ${formErrors["address.city"] ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                    className={`w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none ${formErrors["address.city"] ? 'border-red-500' : 'border-[#219377]'}`}
+                    style={{ color: PRIMARY_COLOR }}
                     required
                     disabled={loading}
                   />
                   {formErrors["address.city"] && <p className="text-red-500 text-xs mt-1">{formErrors["address.city"]}</p>}
                 </div>
                 <div>
-                  <label htmlFor="addressState" className="block text-sm font-medium text-gray-700 mb-1">State/Province:</label>
+                  <label htmlFor="addressState" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>
+                    State/Province:
+                  </label>
                   <input
                     type="text"
                     id="addressState"
                     name="address.state"
                     value={formData.address.state}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-2 border border-[#219377] rounded-lg shadow-sm focus:outline-none"
+                    style={{ color: PRIMARY_COLOR }}
                     disabled={loading}
                   />
                 </div>
               </div>
               <div>
-                <label htmlFor="addressCountry" className="block text-sm font-medium text-gray-700 mb-1">Country:</label>
+                <label htmlFor="addressCountry" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>
+                  Country:
+                </label>
                 <input
                   type="text"
                   id="addressCountry"
                   name="address.country"
                   value={formData.address.country}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2 border ${formErrors["address.country"] ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  className={`w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none ${formErrors["address.country"] ? 'border-red-500' : 'border-[#219377]'}`}
+                  style={{ color: PRIMARY_COLOR }}
                   required
                   disabled={loading}
                 />
@@ -219,14 +238,17 @@ function CreateEditPropertyPage() {
           </fieldset>
 
           <div>
-            <label htmlFor="propertyDetails" className="block text-sm font-medium text-gray-700 mb-1">Details (Optional):</label>
+            <label htmlFor="propertyDetails" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>
+              Details (Optional):
+            </label>
             <textarea
               id="propertyDetails"
               name="details"
               value={formData.details}
               onChange={handleChange}
               rows="4"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 resize-y"
+              className="w-full px-4 py-2 border border-[#219377] rounded-lg shadow-sm focus:outline-none resize-y"
+              style={{ color: PRIMARY_COLOR }}
               disabled={loading}
             ></textarea>
           </div>
@@ -235,23 +257,32 @@ function CreateEditPropertyPage() {
             <Button
               type="button"
               onClick={() => navigate('/landlord/properties')}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-5 rounded-lg shadow-sm flex items-center"
+              className="py-2 px-5 rounded-lg flex items-center"
+              style={{
+                backgroundColor: "#e4e4e7",
+                color: PRIMARY_COLOR,
+                fontWeight: 600
+              }}
               disabled={loading}
             >
               <XCircle className="w-5 h-5 mr-2" /> Cancel
             </Button>
             <Button
               type="submit"
-              className="bg-green-600 hover:bg-green-700 text-white py-2 px-5 rounded-lg shadow-md flex items-center"
+              className="py-2 px-5 rounded-lg flex items-center shadow-md"
+              style={{
+                backgroundColor: PRIMARY_COLOR,
+                color: "#fff",
+                fontWeight: 600
+              }}
               disabled={loading}
             >
-              <Save className="w-5 h-5 mr-2" /> {isEditMode ? 'Update Property' : 'Create Property'}
+              <Save className="w-5 h-5 mr-2" /> {isEditMode ? "Update Property" : "Create Property"}
             </Button>
           </div>
         </form>
       </div>
     </div>
-    
   );
 }
 

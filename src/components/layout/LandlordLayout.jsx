@@ -1,36 +1,74 @@
-// frontend/src/components/layout/LandlordLayout.jsx
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import LandlordSidebar from './LandlordSidebar';
 import LandlordNavbar from './LandlordNavbar';
-import { useAuth } from '../../context/AuthContext'; // Assuming AuthContext is in use
+import { useAuth } from '../../context/AuthContext';
+
+const PRIMARY_COLOR = '#219377';
+const SIDEBAR_BG = '#1a3b34';
+const SIDEBAR_ACTIVE = '#ffbd59';
 
 const LandlordLayout = () => {
   const { user, loading } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center text-gray-600">Initializing...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center text-gray-600" style={{ color: PRIMARY_COLOR + "cc" }}>
+        Initializing...
+      </div>
+    );
   }
 
-  // A landlord's dashboard can often be viewed by an admin or PM as well.
-  // The primary check is that the user is not a tenant.
   if (!user || user.role === 'tenant') {
     return <Navigate to="/unauthorized" replace />;
   }
-  
-  // A specific check for the landlord role
   if (user.role !== 'landlord' && user.role !== 'admin') {
-     return <Navigate to={`/${user.role}/dashboard`} replace />;
+    return <Navigate to={`/${user.role}/dashboard`} replace />;
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans">
-      <LandlordSidebar />
+    <div
+      className="flex h-screen font-sans"
+      style={{ background: "#f9fafb" }}
+    >
+      <LandlordSidebar
+        isSidebarOpen={sidebarOpen}
+        toggleSidebar={() => setSidebarOpen(v => !v)}
+        brandColor={PRIMARY_COLOR}
+        sidebarBg={SIDEBAR_BG}
+        activeColor={SIDEBAR_ACTIVE}
+      />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <LandlordNavbar />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-6 lg:p-8">
-          <Outlet /> {/* Child routes will render here */}
+        {/* Hamburger for mobile */}
+        <button
+          className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-full shadow-lg"
+          style={{
+            backgroundColor: PRIMARY_COLOR,
+            color: "#fff",
+            boxShadow: "0 2px 8px 0 rgba(33,147,119,0.15)"
+          }}
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open sidebar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <LandlordNavbar
+          brandColor={PRIMARY_COLOR}
+          sidebarBg={SIDEBAR_BG}
+          activeColor={SIDEBAR_ACTIVE}
+        />
+        <main
+          className="flex-1 overflow-x-hidden overflow-y-auto"
+          style={{
+            background: "#f4f6f8",
+            padding: "1.5rem 2rem",
+            minHeight: "100vh"
+          }}
+        >
+          <Outlet />
         </main>
       </div>
     </div>

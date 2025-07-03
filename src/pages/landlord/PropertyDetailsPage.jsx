@@ -1,5 +1,3 @@
-// frontend/src/pages/landlord/PropertyDetailsPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Button from '../../components/common/Button';
@@ -7,21 +5,21 @@ import Modal from '../../components/common/Modal';
 
 // Service imports
 import { getPropertyById, updateProperty } from '../../services/propertyService';
-import { createUnit, updateUnit, deleteUnit } from '../../services/unitService'; // For unit management
-import { getUserById } from '../../services/userService'; // To get tenant details
+import { createUnit, updateUnit, deleteUnit } from '../../services/unitService';
+import { getUserById } from '../../services/userService';
 
 // Icons
-import { Edit, Trash2, PlusCircle, Home, Maximize, Bed, Bath, User, Users, Square, ChevronRight } from 'lucide-react';
-// Helper for displaying messages to user
+import { Edit, Trash2, PlusCircle, Home, Square, Users, ChevronRight } from 'lucide-react';
+
+const PRIMARY_COLOR = '#219377';
+const SECONDARY_COLOR = '#ffbd59';
+const PRIMARY_DARK = '#197b63'; // Slightly darker for hover
+
 const showMessage = (msg, type = 'info') => {
   console.log(`${type.toUpperCase()}: ${msg}`);
   alert(msg); // Keeping alert for now
 };
 
-/**
- * PropertyDetailsPage displays detailed information about a single property,
- * allows editing property details, and manages its associated units and tenants.
- */
 function PropertyDetailsPage() {
   const { propertyId } = useParams();
   const navigate = useNavigate();
@@ -30,20 +28,30 @@ function PropertyDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditingProperty, setIsEditingProperty] = useState(false);
-  const [propertyFormData, setPropertyFormData] = useState({ name: "", address: { street: "", city: "", state: "", country: "" }, details: "" });
+  const [propertyFormData, setPropertyFormData] = useState({
+    name: "",
+    address: { street: "", city: "", state: "", country: "" },
+    details: ""
+  });
 
   const [showAddUnitModal, setShowAddUnitModal] = useState(false);
-  const [unitForm, setUnitForm] = useState({ unitName: "", floor: "", details: "", numBedrooms: 0, numBathrooms: 0, squareFootage: 0, rentAmount: 0, status: "vacant" });
+  const [unitForm, setUnitForm] = useState({
+    unitName: "", floor: "", details: "", numBedrooms: 0, numBathrooms: 0,
+    squareFootage: 0, rentAmount: 0, status: "vacant"
+  });
   const [addUnitError, setAddUnitError] = useState("");
 
   const [showEditUnitModal, setShowEditUnitModal] = useState(false);
   const [editingUnitId, setEditingUnitId] = useState(null);
-  const [editUnitForm, setEditUnitForm] = useState({ unitName: "", floor: "", details: "", numBedrooms: 0, numBathrooms: 0, squareFootage: 0, rentAmount: 0, status: "" });
+  const [editUnitForm, setEditUnitForm] = useState({
+    unitName: "", floor: "", details: "", numBedrooms: 0, numBathrooms: 0,
+    squareFootage: 0, rentAmount: 0, status: ""
+  });
   const [editUnitError, setEditUnitError] = useState("");
-
 
   useEffect(() => {
     fetchPropertyDetails();
+    // eslint-disable-next-line
   }, [propertyId]);
 
   const fetchPropertyDetails = async () => {
@@ -65,7 +73,7 @@ function PropertyDetailsPage() {
     }
   };
 
-  // --- Property Editing Handlers ---
+  // Property editing
   const handlePropertyFormChange = (e) => {
     const { name, value } = e.target;
     if (name.includes('.')) {
@@ -86,14 +94,14 @@ function PropertyDetailsPage() {
       await updateProperty(propertyId, propertyFormData);
       showMessage("Property updated successfully!", 'success');
       setIsEditingProperty(false);
-      fetchPropertyDetails(); // Re-fetch to update UI
+      fetchPropertyDetails();
     } catch (err) {
       setError("Failed to update property: " + (err.response?.data?.message || err.message));
       console.error("Update property error:", err);
     }
   };
 
-  // --- Unit Management Handlers ---
+  // --- Unit Management ---
   const handleUnitFormChange = (e) => {
     const { name, value, type } = e.target;
     setUnitForm(prev => ({
@@ -106,11 +114,11 @@ function PropertyDetailsPage() {
     e.preventDefault();
     setAddUnitError("");
     try {
-      await createUnit(propertyId, unitForm); // Use propertyId from URL
+      await createUnit(propertyId, unitForm);
       showMessage("Unit added successfully!", 'success');
       setShowAddUnitModal(false);
-      setUnitForm({ unitName: "", floor: "", details: "", numBedrooms: 0, numBathrooms: 0, squareFootage: 0, rentAmount: 0, status: "vacant" }); // Reset form
-      fetchPropertyDetails(); // Re-fetch property to update units list
+      setUnitForm({ unitName: "", floor: "", details: "", numBedrooms: 0, numBathrooms: 0, squareFootage: 0, rentAmount: 0, status: "vacant" });
+      fetchPropertyDetails();
     } catch (err) {
       setAddUnitError("Failed to add unit: " + (err.response?.data?.message || err.message));
       console.error("Add unit error:", err);
@@ -148,7 +156,7 @@ function PropertyDetailsPage() {
       showMessage("Unit updated successfully!", 'success');
       setShowEditUnitModal(false);
       setEditingUnitId(null);
-      fetchPropertyDetails(); // Re-fetch property to update units list
+      fetchPropertyDetails();
     } catch (err) {
       setEditUnitError("Failed to update unit: " + (err.response?.data?.message || err.message));
       console.error("Update unit error:", err);
@@ -160,7 +168,7 @@ function PropertyDetailsPage() {
       try {
         await deleteUnit(propertyId, unitId);
         showMessage("Unit deleted successfully!", 'success');
-        fetchPropertyDetails(); // Re-fetch property to update units list
+        fetchPropertyDetails();
       } catch (err) {
         showMessage("Failed to delete unit: " + (err.response?.data?.message || err.message), 'error');
         console.error("Delete unit error:", err);
@@ -170,147 +178,208 @@ function PropertyDetailsPage() {
 
   if (loading) {
     return (
-    
       <div className="flex justify-center items-center min-h-[calc(100vh-120px)]">
         <p className="text-xl text-gray-600">Loading property details...</p>
       </div>
-      
     );
   }
 
   if (error) {
     return (
-      
       <div className="flex justify-center items-center min-h-[calc(100vh-120px)]">
         <p className="text-xl text-red-600">{error}</p>
       </div>
-    
     );
   }
 
   if (!property) {
     return (
-      
       <div className="flex justify-center items-center min-h-[calc(100vh-120px)]">
         <p className="text-xl text-gray-600">Property not found.</p>
       </div>
-    
     );
   }
 
   return (
-  
-    <div className="p-4 md:p-8 bg-gray-50 min-h-full">
-      <div className="flex justify-between items-center mb-6 border-b pb-2">
-        <h1 className="text-3xl font-extrabold text-gray-900">
-          Property: {property.name}
+    <div
+      className="p-4 md:p-8 min-h-full"
+      style={{ backgroundColor: "#f9fafb" }}
+    >
+      {/* Header */}
+      <div className="flex justify-between items-center mb-7 border-b pb-3" style={{ borderColor: PRIMARY_COLOR }}>
+        <h1 className="text-3xl font-extrabold" style={{ color: PRIMARY_COLOR }}>
+          Property: <span className="font-bold">{property.name}</span>
         </h1>
         <Button
           onClick={() => setIsEditingProperty(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow-md flex items-center space-x-2"
+          className="flex items-center space-x-2 py-2 px-4 rounded-lg shadow-md"
+          style={{
+            backgroundColor: PRIMARY_COLOR,
+            color: '#fff',
+            fontWeight: 600
+          }}
         >
           <Edit className="w-5 h-5" /> <span>Edit Property</span>
         </Button>
       </div>
 
       {/* Property Details Section */}
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 mb-10">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">Details</h2>
+      <div
+        className="p-8 rounded-xl shadow-lg mb-10"
+        style={{ background: '#fff', border: `1.5px solid ${PRIMARY_COLOR}30` }}
+      >
+        <h2 className="text-2xl font-semibold mb-6" style={{ color: PRIMARY_COLOR }}>Details</h2>
         {isEditingProperty ? (
           <form onSubmit={handlePropertySubmit} className="space-y-4">
             <div>
-              <label htmlFor="propertyName" className="block text-sm font-medium text-gray-700">Property Name</label>
-              <input type="text" id="propertyName" name="name" value={propertyFormData.name} onChange={handlePropertyFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required />
+              <label htmlFor="propertyName" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Property Name</label>
+              <input type="text" id="propertyName" name="name" value={propertyFormData.name} onChange={handlePropertyFormChange} className="mt-1 block w-full border rounded-md shadow-sm p-2" style={{ borderColor: PRIMARY_COLOR }} required />
             </div>
             <div>
-              <label htmlFor="propertyStreet" className="block text-sm font-medium text-gray-700">Street</label>
-              <input type="text" id="propertyStreet" name="address.street" value={propertyFormData.address.street} onChange={handlePropertyFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+              <label htmlFor="propertyStreet" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Street</label>
+              <input type="text" id="propertyStreet" name="address.street" value={propertyFormData.address.street} onChange={handlePropertyFormChange} className="mt-1 block w-full border rounded-md shadow-sm p-2" style={{ borderColor: PRIMARY_COLOR }} />
             </div>
             <div>
-              <label htmlFor="propertyCity" className="block text-sm font-medium text-gray-700">City</label>
-              <input type="text" id="propertyCity" name="address.city" value={propertyFormData.address.city} onChange={handlePropertyFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required />
+              <label htmlFor="propertyCity" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>City</label>
+              <input type="text" id="propertyCity" name="address.city" value={propertyFormData.address.city} onChange={handlePropertyFormChange} className="mt-1 block w-full border rounded-md shadow-sm p-2" style={{ borderColor: PRIMARY_COLOR }} required />
             </div>
             <div>
-              <label htmlFor="propertyState" className="block text-sm font-medium text-gray-700">State</label>
-              <input type="text" id="propertyState" name="address.state" value={propertyFormData.address.state} onChange={handlePropertyFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+              <label htmlFor="propertyState" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>State</label>
+              <input type="text" id="propertyState" name="address.state" value={propertyFormData.address.state} onChange={handlePropertyFormChange} className="mt-1 block w-full border rounded-md shadow-sm p-2" style={{ borderColor: PRIMARY_COLOR }} />
             </div>
             <div>
-              <label htmlFor="propertyCountry" className="block text-sm font-medium text-gray-700">Country</label>
-              <input type="text" id="propertyCountry" name="address.country" value={propertyFormData.address.country} onChange={handlePropertyFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required />
+              <label htmlFor="propertyCountry" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Country</label>
+              <input type="text" id="propertyCountry" name="address.country" value={propertyFormData.address.country} onChange={handlePropertyFormChange} className="mt-1 block w-full border rounded-md shadow-sm p-2" style={{ borderColor: PRIMARY_COLOR }} required />
             </div>
             <div>
-              <label htmlFor="propertyDetails" className="block text-sm font-medium text-gray-700">Details</label>
-              <textarea id="propertyDetails" name="details" value={propertyFormData.details} onChange={handlePropertyFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 h-24"></textarea>
+              <label htmlFor="propertyDetails" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Details</label>
+              <textarea id="propertyDetails" name="details" value={propertyFormData.details} onChange={handlePropertyFormChange} className="mt-1 block w-full border rounded-md shadow-sm p-2 h-24" style={{ borderColor: PRIMARY_COLOR }} />
             </div>
             <div className="flex justify-end space-x-3 mt-6">
-              <Button type="button" onClick={() => setIsEditingProperty(false)} className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded-lg">Cancel</Button>
-              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg">Save Changes</Button>
+              <Button type="button" onClick={() => setIsEditingProperty(false)}
+                className="py-2 px-4 rounded-lg"
+                style={{
+                  backgroundColor: '#e4e4e7', color: PRIMARY_COLOR, fontWeight: 600
+                }}>
+                Cancel
+              </Button>
+              <Button type="submit"
+                className="py-2 px-4 rounded-lg"
+                style={{
+                  backgroundColor: PRIMARY_COLOR, color: '#fff', fontWeight: 600
+                }}>
+                Save Changes
+              </Button>
             </div>
           </form>
         ) : (
-          <div className="space-y-3 text-gray-700 text-lg">
-            <p><strong>Name:</strong> {property.name}</p>
-            <p><strong>Address:</strong> {property.address?.street}, {property.address?.city}, {property.address?.state}, {property.address?.country}</p>
-            <p><strong>Details:</strong> {property.details || 'N/A'}</p>
-            <p><strong>Date Created:</strong> {new Date(property.createdAt).toLocaleDateString()}</p>
+          <div className="space-y-3 text-lg" style={{ color: PRIMARY_COLOR }}>
+            <p><strong>Name:</strong> <span style={{ color: "#222" }}>{property.name}</span></p>
+            <p><strong>Address:</strong> <span style={{ color: "#222" }}>{property.address?.street}, {property.address?.city}, {property.address?.state}, {property.address?.country}</span></p>
+            <p><strong>Details:</strong> <span style={{ color: "#222" }}>{property.details || 'N/A'}</span></p>
+            <p><strong>Date Created:</strong> <span style={{ color: "#222" }}>{new Date(property.createdAt).toLocaleDateString()}</span></p>
           </div>
         )}
       </div>
 
-      {/* Units Section */}
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 mb-10">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">Units ({property.units?.length || 0})</h2>
+     {/* Units Section */}
+      <div
+        className="p-8 rounded-xl shadow-lg mb-10"
+        style={{ background: '#fff', border: `1.5px solid ${SECONDARY_COLOR}60` }}
+      >
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
+          <h2 className="text-2xl font-semibold" style={{ color: PRIMARY_COLOR }}>
+            Units <span className="ml-2 rounded-lg px-2 py-0.5 text-base" style={{
+              backgroundColor: SECONDARY_COLOR, color: '#fff', fontWeight: 600
+            }}>({property.units?.length || 0})</span>
+          </h2>
           <Button
             onClick={() => setShowAddUnitModal(true)}
-            className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-md flex items-center space-x-2"
+            className="flex items-center space-x-2 py-2 px-4 rounded-lg shadow-md"
+            style={{
+              backgroundColor: SECONDARY_COLOR,
+              color: '#222',
+              fontWeight: 600
+            }}
           >
-            <PlusCircle className="w-5 h-5" /> <span>Add New Unit</span>
+            <PlusCircle className="w-5 h-5" /> <span className="hidden sm:inline">Add New Unit</span>
           </Button>
         </div>
-
         {property.units?.length === 0 ? (
           <p className="text-gray-600 italic text-center py-6">No units found for this property.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
             {property.units.map(unit => (
-              <div key={unit._id} className="bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between">
+              <div
+                key={unit._id}
+                className="flex flex-col justify-between p-7 rounded-xl shadow-sm border transition-all"
+                style={{
+                  background: "#f6fcfa",
+                  borderColor: PRIMARY_COLOR + "60",
+                  minHeight: "270px"
+                }}
+              >
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2 flex items-center space-x-2">
-                    <Home className="w-6 h-6 text-indigo-500" />
-                    <span>{unit.unitName}</span>
-                    <span className={`ml-auto px-2 py-1 rounded-full text-xs font-semibold capitalize ${
-                      unit.status === 'vacant' ? 'bg-green-100 text-green-800' :
-                      unit.status === 'occupied' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                  <h3 className="text-xl font-semibold mb-2 flex items-center space-x-2"
+                    style={{ color: PRIMARY_COLOR }}>
+                    <Home className="w-6 h-6" style={{ color: SECONDARY_COLOR }} />
+                    <span className="truncate max-w-[120px] md:max-w-[220px]">{unit.unitName}</span>
+                    <span className="ml-auto px-2 py-1 rounded-full text-xs font-semibold capitalize"
+                      style={{
+                        backgroundColor:
+                          unit.status === 'vacant' ? "#d1fae5" :
+                            unit.status === 'occupied' ? "#fef3c7" :
+                              "#e5e7eb",
+                        color:
+                          unit.status === 'vacant' ? PRIMARY_COLOR :
+                            unit.status === 'occupied' ? "#a16207" :
+                              "#111827"
+                      }}>
                       {unit.status.replace(/_/g, ' ')}
                     </span>
                   </h3>
-                  <p className="text-gray-700 text-sm mb-3">
+                  <p className="text-gray-700 text-sm mb-2">
                     Floor: {unit.floor || 'N/A'} | Bedrooms: {unit.numBedrooms || '0'} | Bathrooms: {unit.numBathrooms || '0'}
                   </p>
                   <p className="text-gray-600 text-sm mb-2">{unit.details || 'No additional details.'}</p>
-                  <p className="text-gray-800 font-medium">Rent: ${unit.rentAmount?.toLocaleString() || 'N/A'}</p>
-                  <p className="text-gray-600 text-sm flex items-center space-x-1 mt-2">
-                      <Square className="w-4 h-4" /> <span>{unit.squareFootage ? `${unit.squareFootage} sq ft` : 'N/A'}</span>
+                  <p className="font-medium mb-1" style={{ color: PRIMARY_COLOR }}>Rent: ${unit.rentAmount?.toLocaleString() || 'N/A'}</p>
+                  <p className="text-gray-600 text-sm flex items-center space-x-1">
+                    <Square className="w-4 h-4" /> <span>{unit.squareFootage ? `${unit.squareFootage} sq ft` : 'N/A'}</span>
                   </p>
                 </div>
-                <div className="mt-4 flex justify-end space-x-3">
-                  <Link to={`/landlord/properties/${propertyId}/tenants/${unit._id}`} className="text-sm text-blue-600 hover:underline flex items-center space-x-1" title="Manage Tenants for this Unit">
-                      <Users className="w-4 h-4" /> <span>Tenants</span>
+                <div className="mt-5 flex flex-row gap-2 flex-wrap justify-end items-center">
+                  <Link
+                    to={`/landlord/properties/${propertyId}/tenants/${unit._id}`}
+                    className="p-2 rounded-full hover:bg-[#d1fae5] transition flex items-center"
+                    style={{ color: PRIMARY_COLOR }}
+                    title="Manage Tenants for this Unit"
+                  >
+                    <Users className="w-5 h-5" />
+                    <span className="ml-1 text-xs font-medium hidden sm:inline">Tenants</span>
                   </Link>
                   <Button
                     onClick={() => handleOpenEditUnitModal(unit)}
-                    className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-md text-sm flex items-center space-x-1"
+                    className="p-2 rounded-full hover:bg-[#e5e7eb] transition"
+                    style={{
+                      backgroundColor: "transparent",
+                      color: PRIMARY_COLOR
+                    }}
+                    title="Edit Unit"
                   >
-                    <Edit className="w-4 h-4" /> <span>Edit</span>
+                    <Edit className="w-5 h-5" />
+                    <span className="ml-1 text-xs font-medium hidden sm:inline">Edit</span>
                   </Button>
                   <Button
                     onClick={() => handleDeleteUnit(unit._id)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm flex items-center space-x-1"
+                    className="p-2 rounded-full hover:bg-[#fca5a5] transition"
+                    style={{
+                      backgroundColor: "transparent",
+                      color: '#e64848'
+                    }}
+                    title="Delete Unit"
                   >
-                    <Trash2 className="w-4 h-4" /> <span>Delete</span>
+                    <Trash2 className="w-5 h-5" />
+                    <span className="ml-1 text-xs font-medium hidden sm:inline">Delete</span>
                   </Button>
                 </div>
               </div>
@@ -319,12 +388,24 @@ function PropertyDetailsPage() {
         )}
       </div>
 
-      {/* Tenants in this Property Section (Summary) */}
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 mb-10">
+      {/* Tenants in this Property Section */}
+      <div
+        className="p-8 rounded-xl shadow-lg mb-10"
+        style={{ background: '#fff', border: `1.5px solid ${PRIMARY_COLOR}15` }}
+      >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">Tenants in {property.name}</h2>
-          <Link to={`/landlord/tenants?propertyId=${propertyId}`} className="text-blue-600 hover:underline font-medium flex items-center space-x-1">
-            <span>Manage All Tenants</span> <ChevronRight className="w-4 h-4" />
+          <h2 className="text-2xl font-semibold" style={{ color: PRIMARY_COLOR }}>Tenants in {property.name}</h2>
+          <Link
+            to={`/landlord/tenants?propertyId=${propertyId}`}
+            className="font-medium flex items-center space-x-1 px-3 py-2 rounded-md"
+            style={{
+              backgroundColor: SECONDARY_COLOR,
+              color: '#222',
+              fontWeight: 600
+            }}
+          >
+            <span>Manage All Tenants</span>
+            <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
         {property.tenants?.length === 0 ? (
@@ -332,13 +413,20 @@ function PropertyDetailsPage() {
         ) : (
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {property.tenants.map(tenant => (
-              <li key={tenant._id} className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
-                <div className="font-semibold text-gray-900">{tenant.name || tenant.email}</div>
+              <li key={tenant._id}
+                className="p-4 rounded-lg shadow-sm border"
+                style={{ background: "#f6fcfa", borderColor: PRIMARY_COLOR + "40" }}
+              >
+                <div className="font-semibold" style={{ color: PRIMARY_COLOR }}>{tenant.name || tenant.email}</div>
                 <div className="text-sm text-gray-700">{tenant.email}</div>
                 {tenant.assignedUnit?.unitName && (
-                    <div className="text-xs text-gray-600 mt-1">Assigned Unit: {tenant.assignedUnit.unitName}</div>
+                  <div className="text-xs mt-1" style={{ color: PRIMARY_COLOR }}>
+                    Assigned Unit: {tenant.assignedUnit.unitName}
+                  </div>
                 )}
-                <Link to={`/landlord/properties/${propertyId}/tenants/${tenant._id}`} className="text-indigo-600 hover:underline text-sm mt-2 block">
+                <Link to={`/landlord/properties/${propertyId}/tenants/${tenant._id}`}
+                  className="text-sm mt-2 block"
+                  style={{ color: SECONDARY_COLOR, fontWeight: 600 }}>
                   View/Manage Tenant
                 </Link>
               </li>
@@ -347,49 +435,68 @@ function PropertyDetailsPage() {
         )}
       </div>
 
-
       {/* Modals */}
       {/* Add New Unit Modal */}
       <Modal
         isOpen={showAddUnitModal}
         onClose={() => setShowAddUnitModal(false)}
-        title={`Add New Unit to ${property.name}`}
+        title={
+          <span style={{ color: PRIMARY_COLOR, fontWeight: 700 }}>
+            Add New Unit to {property.name}
+          </span>
+        }
       >
         <form onSubmit={handleAddUnitSubmit} className="p-4 space-y-4">
           {addUnitError && <p className="text-red-500 text-sm mb-3">{addUnitError}</p>}
           <div>
-            <label htmlFor="unitName" className="block text-sm font-medium text-gray-700">Unit Name/Number</label>
-            <input type="text" id="unitName" name="unitName" value={unitForm.unitName} onChange={handleUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required />
+            <label htmlFor="unitName" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Unit Name/Number</label>
+            <input type="text" id="unitName" name="unitName" value={unitForm.unitName} onChange={handleUnitFormChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              style={{ borderColor: PRIMARY_COLOR }} required />
           </div>
           <div>
-            <label htmlFor="floor" className="block text-sm font-medium text-gray-700">Floor (Optional)</label>
-            <input type="text" id="floor" name="floor" value={unitForm.floor} onChange={handleUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+            <label htmlFor="floor" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Floor (Optional)</label>
+            <input type="text" id="floor" name="floor" value={unitForm.floor} onChange={handleUnitFormChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              style={{ borderColor: PRIMARY_COLOR }} />
           </div>
           <div>
-            <label htmlFor="details" className="block text-sm font-medium text-gray-700">Details (Optional, Max 1000 chars)</label>
-            <textarea id="details" name="details" value={unitForm.details} onChange={handleUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 h-24" maxLength={1000}></textarea>
+            <label htmlFor="details" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Details (Optional, Max 1000 chars)</label>
+            <textarea id="details" name="details" value={unitForm.details} onChange={handleUnitFormChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2 h-24"
+              style={{ borderColor: PRIMARY_COLOR }} maxLength={1000}></textarea>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="numBedrooms" className="block text-sm font-medium text-gray-700">Bedrooms</label>
-              <input type="number" id="numBedrooms" name="numBedrooms" value={unitForm.numBedrooms} onChange={handleUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" min="0" />
+              <label htmlFor="numBedrooms" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Bedrooms</label>
+              <input type="number" id="numBedrooms" name="numBedrooms" value={unitForm.numBedrooms} onChange={handleUnitFormChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+                style={{ borderColor: PRIMARY_COLOR }} min="0" />
             </div>
             <div>
-              <label htmlFor="numBathrooms" className="block text-sm font-medium text-gray-700">Bathrooms</label>
-              <input type="number" id="numBathrooms" name="numBathrooms" value={unitForm.numBathrooms} onChange={handleUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" min="0" />
+              <label htmlFor="numBathrooms" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Bathrooms</label>
+              <input type="number" id="numBathrooms" name="numBathrooms" value={unitForm.numBathrooms} onChange={handleUnitFormChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+                style={{ borderColor: PRIMARY_COLOR }} min="0" />
             </div>
             <div>
-              <label htmlFor="squareFootage" className="block text-sm font-medium text-gray-700">Square Footage</label>
-              <input type="number" id="squareFootage" name="squareFootage" value={unitForm.squareFootage} onChange={handleUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" min="0" />
+              <label htmlFor="squareFootage" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Square Footage</label>
+              <input type="number" id="squareFootage" name="squareFootage" value={unitForm.squareFootage} onChange={handleUnitFormChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+                style={{ borderColor: PRIMARY_COLOR }} min="0" />
             </div>
             <div>
-              <label htmlFor="rentAmount" className="block text-sm font-medium text-gray-700">Rent Amount ($)</label>
-              <input type="number" id="rentAmount" name="rentAmount" value={unitForm.rentAmount} onChange={handleUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" min="0" />
+              <label htmlFor="rentAmount" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Rent Amount ($)</label>
+              <input type="number" id="rentAmount" name="rentAmount" value={unitForm.rentAmount} onChange={handleUnitFormChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+                style={{ borderColor: PRIMARY_COLOR }} min="0" />
             </div>
           </div>
           <div>
-            <label htmlFor="unitStatus" className="block text-sm font-medium text-gray-700">Status</label>
-            <select id="unitStatus" name="status" value={unitForm.status} onChange={handleUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+            <label htmlFor="unitStatus" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Status</label>
+            <select id="unitStatus" name="status" value={unitForm.status} onChange={handleUnitFormChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              style={{ borderColor: PRIMARY_COLOR }}>
               <option value="vacant">Vacant</option>
               <option value="occupied">Occupied</option>
               <option value="under_maintenance">Under Maintenance</option>
@@ -397,8 +504,16 @@ function PropertyDetailsPage() {
             </select>
           </div>
           <div className="flex justify-end space-x-3 mt-6">
-            <Button type="button" onClick={() => setShowAddUnitModal(false)} className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded-lg">Cancel</Button>
-            <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg">Add Unit</Button>
+            <Button type="button" onClick={() => setShowAddUnitModal(false)}
+              className="py-2 px-4 rounded-lg"
+              style={{ backgroundColor: "#e4e4e7", color: PRIMARY_COLOR, fontWeight: 600 }}>
+              Cancel
+            </Button>
+            <Button type="submit"
+              className="py-2 px-4 rounded-lg"
+              style={{ backgroundColor: SECONDARY_COLOR, color: "#222", fontWeight: 600 }}>
+              Add Unit
+            </Button>
           </div>
         </form>
       </Modal>
@@ -407,43 +522,63 @@ function PropertyDetailsPage() {
       <Modal
         isOpen={showEditUnitModal}
         onClose={() => setShowEditUnitModal(false)}
-        title={`Edit Unit: ${editUnitForm.unitName}`}
+        title={
+          <span style={{ color: PRIMARY_COLOR, fontWeight: 700 }}>
+            Edit Unit: {editUnitForm.unitName}
+          </span>
+        }
       >
         <form onSubmit={handleEditUnitSubmit} className="p-4 space-y-4">
           {editUnitError && <p className="text-red-500 text-sm mb-3">{editUnitError}</p>}
           <div>
-            <label htmlFor="editUnitName" className="block text-sm font-medium text-gray-700">Unit Name/Number</label>
-            <input type="text" id="editUnitName" name="unitName" value={editUnitForm.unitName} onChange={handleEditUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required />
+            <label htmlFor="editUnitName" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Unit Name/Number</label>
+            <input type="text" id="editUnitName" name="unitName" value={editUnitForm.unitName} onChange={handleEditUnitFormChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              style={{ borderColor: PRIMARY_COLOR }} required />
           </div>
           <div>
-            <label htmlFor="editFloor" className="block text-sm font-medium text-gray-700">Floor</label>
-            <input type="text" id="editFloor" name="floor" value={editUnitForm.floor} onChange={handleEditUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
+            <label htmlFor="editFloor" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Floor</label>
+            <input type="text" id="editFloor" name="floor" value={editUnitForm.floor} onChange={handleEditUnitFormChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              style={{ borderColor: PRIMARY_COLOR }} />
           </div>
           <div>
-            <label htmlFor="editDetails" className="block text-sm font-medium text-gray-700">Details (Max 1000 chars)</label>
-            <textarea id="editDetails" name="details" value={editUnitForm.details} onChange={handleEditUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 h-24" maxLength={1000}></textarea>
+            <label htmlFor="editDetails" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Details (Max 1000 chars)</label>
+            <textarea id="editDetails" name="details" value={editUnitForm.details} onChange={handleEditUnitFormChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2 h-24"
+              style={{ borderColor: PRIMARY_COLOR }} maxLength={1000}></textarea>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="editNumBedrooms" className="block text-sm font-medium text-gray-700">Bedrooms</label>
-              <input type="number" id="editNumBedrooms" name="numBedrooms" value={editUnitForm.numBedrooms} onChange={handleEditUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" min="0" />
+              <label htmlFor="editNumBedrooms" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Bedrooms</label>
+              <input type="number" id="editNumBedrooms" name="numBedrooms" value={editUnitForm.numBedrooms} onChange={handleEditUnitFormChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+                style={{ borderColor: PRIMARY_COLOR }} min="0" />
             </div>
             <div>
-              <label htmlFor="editNumBathrooms" className="block text-sm font-medium text-gray-700">Bathrooms</label>
-              <input type="number" id="editNumBathrooms" name="numBathrooms" value={editUnitForm.numBathrooms} onChange={handleEditUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" min="0" />
+              <label htmlFor="editNumBathrooms" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Bathrooms</label>
+              <input type="number" id="editNumBathrooms" name="numBathrooms" value={editUnitForm.numBathrooms} onChange={handleEditUnitFormChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+                style={{ borderColor: PRIMARY_COLOR }} min="0" />
             </div>
             <div>
-              <label htmlFor="editSquareFootage" className="block text-sm font-medium text-gray-700">Square Footage</label>
-              <input type="number" id="editSquareFootage" name="squareFootage" value={editUnitForm.squareFootage} onChange={handleEditUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" min="0" />
+              <label htmlFor="editSquareFootage" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Square Footage</label>
+              <input type="number" id="editSquareFootage" name="squareFootage" value={editUnitForm.squareFootage} onChange={handleEditUnitFormChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+                style={{ borderColor: PRIMARY_COLOR }} min="0" />
             </div>
             <div>
-              <label htmlFor="editRentAmount" className="block text-sm font-medium text-gray-700">Rent Amount ($)</label>
-              <input type="number" id="editRentAmount" name="rentAmount" value={editUnitForm.rentAmount} onChange={handleEditUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" min="0" />
+              <label htmlFor="editRentAmount" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Rent Amount ($)</label>
+              <input type="number" id="editRentAmount" name="rentAmount" value={editUnitForm.rentAmount} onChange={handleEditUnitFormChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+                style={{ borderColor: PRIMARY_COLOR }} min="0" />
             </div>
           </div>
           <div>
-            <label htmlFor="editUnitStatus" className="block text-sm font-medium text-gray-700">Status</label>
-            <select id="editUnitStatus" name="status" value={editUnitForm.status} onChange={handleEditUnitFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+            <label htmlFor="editUnitStatus" className="block text-sm font-semibold" style={{ color: PRIMARY_COLOR }}>Status</label>
+            <select id="editUnitStatus" name="status" value={editUnitForm.status} onChange={handleEditUnitFormChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              style={{ borderColor: PRIMARY_COLOR }}>
               <option value="vacant">Vacant</option>
               <option value="occupied">Occupied</option>
               <option value="under_maintenance">Under Maintenance</option>
@@ -451,13 +586,20 @@ function PropertyDetailsPage() {
             </select>
           </div>
           <div className="flex justify-end space-x-3 mt-6">
-            <Button type="button" onClick={() => setShowEditUnitModal(false)} className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded-lg">Cancel</Button>
-            <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg">Save Changes</Button>
+            <Button type="button" onClick={() => setShowEditUnitModal(false)}
+              className="py-2 px-4 rounded-lg"
+              style={{ backgroundColor: "#e4e4e7", color: PRIMARY_COLOR, fontWeight: 600 }}>
+              Cancel
+            </Button>
+            <Button type="submit"
+              className="py-2 px-4 rounded-lg"
+              style={{ backgroundColor: PRIMARY_COLOR, color: "#fff", fontWeight: 600 }}>
+              Save Changes
+            </Button>
           </div>
         </form>
       </Modal>
     </div>
-    
   );
 }
 

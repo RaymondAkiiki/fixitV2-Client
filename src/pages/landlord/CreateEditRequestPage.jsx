@@ -1,67 +1,59 @@
-// frontend/src/pages/landlord/CreateEditRequestPage.jsx
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Button from "../../components/common/Button";
-import { Wrench, Save, XCircle, UploadCloud, PlusCircle } from "lucide-react";
-
-// Import updated service functions
+import { Wrench, Save, XCircle, UploadCloud } from "lucide-react";
 import { createRequest, getRequestById, updateRequest, uploadRequestMedia, deleteRequestMedia } from "../../services/requestService";
-import { getAllProperties } from "../../services/propertyService"; // To select property/unit
+import { getAllProperties } from "../../services/propertyService";
 
-// Helper for displaying messages to user
-const showMessage = (msg, type = 'info') => {
-  console.log(`${type.toUpperCase()}: ${msg}`);
-  alert(msg); // Fallback to alert
-};
+// Branding
+const PRIMARY_COLOR = "#219377";
+const PRIMARY_DARK = "#197b63";
+const SECONDARY_COLOR = "#ffbd59";
 
-// Request Categories and Priorities (lowercase to match backend enum)
 const requestCategories = [
-    { value: 'plumbing', label: 'Plumbing' },
-    { value: 'electrical', label: 'Electrical' },
-    { value: 'hvac', label: 'HVAC' },
-    { value: 'appliance', label: 'Appliance' },
-    { value: 'structural', label: 'Structural' },
-    { value: 'landscaping', label: 'Landscaping' },
-    { value: 'other', label: 'Other' },
-    { value: 'cleaning', label: 'Cleaning' },
-    { value: 'security', label: 'Security' },
-    { value: 'pest_control', label: 'Pest Control' },
-    { value: 'scheduled', label: 'Scheduled' },
+  { value: "plumbing", label: "Plumbing" },
+  { value: "electrical", label: "Electrical" },
+  { value: "hvac", label: "HVAC" },
+  { value: "appliance", label: "Appliance" },
+  { value: "structural", label: "Structural" },
+  { value: "landscaping", label: "Landscaping" },
+  { value: "other", label: "Other" },
+  { value: "cleaning", label: "Cleaning" },
+  { value: "security", label: "Security" },
+  { value: "pest_control", label: "Pest Control" },
+  { value: "scheduled", label: "Scheduled" },
 ];
 
 const requestPriorities = [
-    { value: 'low', label: 'Low' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'high', label: 'High' },
-    { value: 'urgent', label: 'Urgent' },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "urgent", label: "Urgent" },
 ];
 
-/**
- * CreateEditRequestPage allows Property Managers to create new requests or
- * comprehensively edit existing ones.
- */
+const showMessage = (msg, type = "info") => alert(msg);
+
 function CreateEditRequestPage() {
-  const { requestId } = useParams(); // Will be undefined for creation, string for editing
+  const { requestId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation(); // To get query params for pre-selecting property/unit
+  const location = useLocation();
   const isEditMode = !!requestId;
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     category: "",
-    priority: "medium", // Default priority
+    priority: "medium",
     propertyId: "",
     unitId: "",
-    mediaFiles: [], // For new uploads
-    existingMedia: [], // URLs of existing media
+    mediaFiles: [],
+    existingMedia: [],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [formErrors, setFormErrors] = useState({});
   const [properties, setProperties] = useState([]);
-  const [unitsForProperty, setUnitsForProperty] = useState([]); // Units of currently selected property
+  const [unitsForProperty, setUnitsForProperty] = useState([]);
 
   // Fetch initial data (properties) and request data if in edit mode
   useEffect(() => {
@@ -74,8 +66,8 @@ function CreateEditRequestPage() {
 
         // Pre-populate property/unit from URL query params if creating
         const queryParams = new URLSearchParams(location.search);
-        const preselectedPropertyId = queryParams.get('propertyId');
-        const preselectedUnitId = queryParams.get('unitId');
+        const preselectedPropertyId = queryParams.get("propertyId");
+        const preselectedUnitId = queryParams.get("unitId");
 
         let initialFormData = { ...formData };
 
@@ -89,7 +81,7 @@ function CreateEditRequestPage() {
             propertyId: requestData.property?._id || "",
             unitId: requestData.unit?._id || "",
             existingMedia: requestData.media || [],
-            mediaFiles: [], // Clear new media uploads
+            mediaFiles: [],
           };
           // Set units for the property selected in the request
           if (initialFormData.propertyId) {
@@ -97,34 +89,30 @@ function CreateEditRequestPage() {
             setUnitsForProperty(selectedProp?.units || []);
           }
         } else if (preselectedPropertyId) {
-            initialFormData.propertyId = preselectedPropertyId;
-            const selectedProp = propertiesData.find(p => p._id === preselectedPropertyId);
-            setUnitsForProperty(selectedProp?.units || []);
-            if (preselectedUnitId) {
-                initialFormData.unitId = preselectedUnitId;
-            }
+          initialFormData.propertyId = preselectedPropertyId;
+          const selectedProp = propertiesData.find(p => p._id === preselectedPropertyId);
+          setUnitsForProperty(selectedProp?.units || []);
+          if (preselectedUnitId) {
+            initialFormData.unitId = preselectedUnitId;
+          }
         }
         setFormData(initialFormData);
-
       } catch (err) {
         setError("Failed to load initial data. " + (err.response?.data?.message || err.message));
-        console.error("Initial data fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchInitialData();
-  }, [requestId, isEditMode, location.search]); // Depend on location.search for query params
-
+    // eslint-disable-next-line
+  }, [requestId, isEditMode, location.search]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormErrors(prev => ({ ...prev, [name]: '' })); // Clear error on change
-
+    setFormErrors(prev => ({ ...prev, [name]: "" }));
     setFormData(prev => {
       const newFormData = { ...prev, [name]: value };
-      // If property changes, reset unitId and update unitsForProperty
-      if (name === 'propertyId') {
+      if (name === "propertyId") {
         newFormData.unitId = "";
         const selectedProperty = properties.find(p => p._id === value);
         setUnitsForProperty(selectedProperty?.units || []);
@@ -134,7 +122,7 @@ function CreateEditRequestPage() {
   };
 
   const handleFileChange = (e) => {
-    setFormErrors(prev => ({ ...prev, mediaFiles: '' }));
+    setFormErrors(prev => ({ ...prev, mediaFiles: "" }));
     setFormData(prev => ({
       ...prev,
       mediaFiles: Array.from(e.target.files)
@@ -143,25 +131,23 @@ function CreateEditRequestPage() {
 
   const handleDeleteExistingMedia = async (mediaUrlToDelete) => {
     if (window.confirm("Are you sure you want to delete this media file?")) {
-        setLoading(true);
-        setError(null);
-        try {
-            await deleteRequestMedia(requestId, mediaUrlToDelete);
-            showMessage("Media file deleted successfully!", 'success');
-            setFormData(prev => ({
-                ...prev,
-                existingMedia: prev.existingMedia.filter(url => url !== mediaUrlToDelete)
-            }));
-        } catch (err) {
-            setError("Failed to delete media. " + (err.response?.data?.message || err.message));
-            showMessage("Failed to delete media.", 'error');
-            console.error("Delete media error:", err);
-        } finally {
-            setLoading(false);
-        }
+      setLoading(true);
+      setError(null);
+      try {
+        await deleteRequestMedia(requestId, mediaUrlToDelete);
+        showMessage("Media file deleted successfully!", "success");
+        setFormData(prev => ({
+          ...prev,
+          existingMedia: prev.existingMedia.filter(url => url !== mediaUrlToDelete)
+        }));
+      } catch (err) {
+        setError("Failed to delete media. " + (err.response?.data?.message || err.message));
+        showMessage("Failed to delete media.", "error");
+      } finally {
+        setLoading(false);
+      }
     }
   };
-
 
   const validateForm = () => {
     const errors = {};
@@ -169,8 +155,6 @@ function CreateEditRequestPage() {
     if (!formData.description.trim()) errors.description = "Description is required.";
     if (!formData.category.trim()) errors.category = "Category is required.";
     if (!formData.propertyId.trim()) errors.propertyId = "Property is required.";
-    // unitId is optional for requests that apply to a property, not a specific unit
-    // if (!formData.unitId.trim()) errors.unitId = "Unit is required.";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -179,7 +163,7 @@ function CreateEditRequestPage() {
     e.preventDefault();
     setError(null);
     if (!validateForm()) {
-      showMessage("Please correct the form errors.", 'error');
+      showMessage("Please correct the form errors.", "error");
       return;
     }
 
@@ -191,68 +175,72 @@ function CreateEditRequestPage() {
         category: formData.category,
         priority: formData.priority,
         propertyId: formData.propertyId,
-        unitId: formData.unitId || null, // Ensure null if empty
-        media: formData.existingMedia, // Pass existing media URLs back
+        unitId: formData.unitId || null,
+        media: formData.existingMedia,
       };
 
       if (isEditMode) {
-        // For updates, send the text fields and then handle new media separately
         await updateRequest(requestId, payload);
         if (formData.mediaFiles.length > 0) {
-            await uploadRequestMedia(requestId, formData.mediaFiles);
+          await uploadRequestMedia(requestId, formData.mediaFiles);
         }
-        showMessage("Request updated successfully!", 'success');
+        showMessage("Request updated successfully!", "success");
       } else {
-        // For creation, send all in one multipart form data
         await createRequest(payload, formData.mediaFiles);
-        showMessage("Request created successfully!", 'success');
+        showMessage("Request created successfully!", "success");
       }
-      navigate('/landlord/requests'); // Redirect to requests list after success
+      navigate("/landlord/requests");
     } catch (err) {
       const msg = err.response?.data?.message || err.message;
-      setError(`Failed to ${isEditMode ? 'update' : 'create'} request: ${msg}`);
-      showMessage(`Failed to ${isEditMode ? 'update' : 'create'} request: ${msg}`, 'error');
-      console.error(`${isEditMode ? 'Update' : 'Create'} request error:`, err);
+      setError(`Failed to ${isEditMode ? "update" : "create"} request: ${msg}`);
+      showMessage(`Failed to ${isEditMode ? "update" : "create"} request: ${msg}`, "error");
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading && isEditMode) { // Only show loading overlay for edit mode initial fetch
+  if (loading && isEditMode) {
     return (
-      
       <div className="flex justify-center items-center h-full">
-        <p className="text-xl text-gray-600">Loading request data...</p>
+        <p className="text-xl" style={{ color: PRIMARY_COLOR + "99" }}>Loading request data...</p>
       </div>
-      
     );
   }
 
-
   return (
-  
-    <div className="p-4 md:p-8 bg-gray-50 min-h-full">
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2 flex items-center">
-        <Wrench className="w-8 h-8 mr-3 text-green-700" />
-        {isEditMode ? 'Edit Service Request' : 'Create New Service Request'}
+    <div className="p-4 md:p-8 min-h-full" style={{ background: "#f9fafb" }}>
+      <h1 className="text-3xl font-extrabold mb-7 border-b pb-3 flex items-center" style={{ color: PRIMARY_COLOR, borderColor: PRIMARY_COLOR }}>
+        <Wrench className="w-8 h-8 mr-3" style={{ color: SECONDARY_COLOR }} />
+        {isEditMode ? "Edit Service Request" : "Create New Service Request"}
       </h1>
 
-      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-        <strong className="font-bold">Error!</strong>
-        <span className="block sm:inline"> {error}</span>
-      </div>}
+      {error && (
+        <div
+          className="px-4 py-3 rounded relative mb-4 flex items-center"
+          style={{
+            backgroundColor: "#fed7d7",
+            border: "1.5px solid #f56565",
+            color: "#9b2c2c"
+          }}
+          role="alert"
+        >
+          <strong className="font-bold mr-2">Error!</strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
 
-      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 max-w-4xl mx-auto">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-white p-8 rounded-xl shadow-lg border max-w-4xl mx-auto" style={{ borderColor: PRIMARY_COLOR + "20" }}>
+        <form onSubmit={handleSubmit} className="space-y-7">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title:</label>
+            <label htmlFor="title" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>Title:</label>
             <input
               type="text"
               id="title"
               name="title"
               value={formData.title}
               onChange={handleChange}
-              className={`w-full px-4 py-2 border ${formErrors.title ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+              className={`w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none ${formErrors.title ? "border-red-500" : "border-[#219377]"}`}
+              style={{ color: PRIMARY_COLOR }}
               required
               disabled={loading}
             />
@@ -260,14 +248,15 @@ function CreateEditRequestPage() {
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description:</label>
+            <label htmlFor="description" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>Description:</label>
             <textarea
               id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows="5"
-              className={`w-full px-4 py-2 border ${formErrors.description ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 resize-y`}
+              className={`w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none resize-y ${formErrors.description ? "border-red-500" : "border-[#219377]"}`}
+              style={{ color: PRIMARY_COLOR }}
               required
               disabled={loading}
             ></textarea>
@@ -276,13 +265,14 @@ function CreateEditRequestPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category:</label>
+              <label htmlFor="category" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>Category:</label>
               <select
                 id="category"
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border ${formErrors.category ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 capitalize`}
+                className={`w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none capitalize ${formErrors.category ? "border-red-500" : "border-[#219377]"}`}
+                style={{ color: PRIMARY_COLOR }}
                 required
                 disabled={loading}
               >
@@ -294,13 +284,14 @@ function CreateEditRequestPage() {
               {formErrors.category && <p className="text-red-500 text-xs mt-1">{formErrors.category}</p>}
             </div>
             <div>
-              <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">Priority:</label>
+              <label htmlFor="priority" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>Priority:</label>
               <select
                 id="priority"
                 name="priority"
                 value={formData.priority}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 capitalize"
+                className="w-full px-4 py-2 border border-[#219377] rounded-lg shadow-sm focus:outline-none capitalize"
+                style={{ color: PRIMARY_COLOR }}
                 disabled={loading}
               >
                 {requestPriorities.map(p => (
@@ -312,13 +303,14 @@ function CreateEditRequestPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="propertyId" className="block text-sm font-medium text-gray-700 mb-1">Property:</label>
+              <label htmlFor="propertyId" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>Property:</label>
               <select
                 id="propertyId"
                 name="propertyId"
                 value={formData.propertyId}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border ${formErrors.propertyId ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                className={`w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none ${formErrors.propertyId ? "border-red-500" : "border-[#219377]"}`}
+                style={{ color: PRIMARY_COLOR }}
                 required
                 disabled={loading}
               >
@@ -330,13 +322,14 @@ function CreateEditRequestPage() {
               {formErrors.propertyId && <p className="text-red-500 text-xs mt-1">{formErrors.propertyId}</p>}
             </div>
             <div>
-              <label htmlFor="unitId" className="block text-sm font-medium text-gray-700 mb-1">Unit (Optional):</label>
+              <label htmlFor="unitId" className="block text-sm font-semibold mb-1" style={{ color: PRIMARY_COLOR }}>Unit (Optional):</label>
               <select
                 id="unitId"
                 name="unitId"
                 value={formData.unitId}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-[#219377] rounded-lg shadow-sm focus:outline-none"
+                style={{ color: PRIMARY_COLOR }}
                 disabled={loading || unitsForProperty.length === 0}
               >
                 <option value="">Select Unit</option>
@@ -348,13 +341,13 @@ function CreateEditRequestPage() {
           </div>
 
           {/* Media Upload Section */}
-          <div className="border border-gray-200 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <UploadCloud className="w-5 h-5 mr-2 text-green-700" /> Upload Media
+          <div className="border border-[#219377] p-4 rounded-lg">
+            <h3 className="text-lg font-semibold mb-4 flex items-center" style={{ color: PRIMARY_COLOR }}>
+              <UploadCloud className="w-5 h-5 mr-2" style={{ color: SECONDARY_COLOR }} /> Upload Media
             </h3>
             {formData.existingMedia.length > 0 && (
               <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Existing Media:</p>
+                <p className="text-sm font-medium mb-2" style={{ color: PRIMARY_COLOR }}>Existing Media:</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {formData.existingMedia.map((mediaUrl, index) => (
                     <div key={index} className="relative group border border-gray-200 rounded-lg overflow-hidden">
@@ -377,46 +370,47 @@ function CreateEditRequestPage() {
               </div>
             )}
             <div>
-              <label htmlFor="mediaFiles" className="block text-sm font-medium text-gray-700 mb-1">Attach New Files (Images/Videos):</label>
+              <label htmlFor="mediaFiles" className="block text-sm font-medium mb-1" style={{ color: PRIMARY_COLOR }}>Attach New Files (Images/Videos):</label>
               <input
                 type="file"
                 id="mediaFiles"
                 name="mediaFiles"
                 multiple
                 onChange={handleFileChange}
-                className={`w-full px-3 py-2 border ${formErrors.mediaFiles ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100`}
+                className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${formErrors.mediaFiles ? "border-red-500" : "border-[#219377]"}`}
+                style={{ color: PRIMARY_COLOR }}
                 disabled={loading}
                 accept="image/*,video/*"
               />
               {formErrors.mediaFiles && <p className="text-red-500 text-xs mt-1">{formErrors.mediaFiles}</p>}
               {formData.mediaFiles.length > 0 && (
-                  <p className="text-sm text-gray-600 mt-2">Selected new files: {formData.mediaFiles.map(f => f.name).join(', ')}</p>
+                <p className="text-sm text-gray-600 mt-2">Selected new files: {formData.mediaFiles.map(f => f.name).join(', ')}</p>
               )}
             </div>
           </div>
 
-
           <div className="flex justify-end space-x-3 mt-6">
             <Button
               type="button"
-              onClick={() => navigate('/landlord/requests')}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-5 rounded-lg shadow-sm flex items-center"
+              onClick={() => navigate("/landlord/requests")}
+              className="py-2 px-5 rounded-lg flex items-center"
+              style={{ backgroundColor: "#e4e4e7", color: PRIMARY_COLOR, fontWeight: 600 }}
               disabled={loading}
             >
               <XCircle className="w-5 h-5 mr-2" /> Cancel
             </Button>
             <Button
               type="submit"
-              className="bg-green-600 hover:bg-green-700 text-white py-2 px-5 rounded-lg shadow-md flex items-center"
+              className="py-2 px-5 rounded-lg flex items-center shadow-md"
+              style={{ backgroundColor: PRIMARY_COLOR, color: "#fff", fontWeight: 600 }}
               disabled={loading}
             >
-              <Save className="w-5 h-5 mr-2" /> {isEditMode ? 'Update Request' : 'Create Request'}
+              <Save className="w-5 h-5 mr-2" /> {isEditMode ? "Update Request" : "Create Request"}
             </Button>
           </div>
         </form>
       </div>
     </div>
-    
   );
 }
 

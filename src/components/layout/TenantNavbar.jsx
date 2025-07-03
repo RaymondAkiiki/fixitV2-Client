@@ -1,31 +1,45 @@
-// frontend/src/components/layout/TenantNavbar.jsx
-
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; // Assuming AuthContext for logout
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useGlobalAlert } from "../../context/GlobalAlertContext";
 
 /**
- * TenantNavbar component for tenant-specific pages.
- * Displays a minimal top navigation with user info and logout.
+ * TenantNavbar – clean, branded, and modern for tenant pages.
+ * Uses #219377 (emerald) and #ffbd59 (secondary) for highlights.
  */
 function TenantNavbar() {
-  const { user, logout } = useAuth();
+  const { user, manualLogout } = useAuth();
+  const { showSuccess } = useGlobalAlert();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    manualLogout();
+    showSuccess("You have been logged out.");
+    navigate("/", { replace: true });
+  };
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 shadow-sm">
-      {/* Logo/Brand Name */}
-      <div className="text-2xl font-bold text-green-700">
-        <Link to="/tenant/dashboard">Fix It by Threalty</Link>
+    <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-[#219377] shadow-sm relative z-20">
+      {/* Brand/Logo */}
+      <div className="flex items-center gap-2">
+        <Link
+          to="/tenant/dashboard"
+          className="text-2xl font-extrabold tracking-tight text-[#219377] hover:text-[#ffbd59] transition"
+        >
+          Fix It by Threalty
+        </Link>
       </div>
 
-      {/* User Info & Logout */}
+      {/* User Info & Logout Button */}
       <div className="flex items-center space-x-4">
         {user && (
-          <span className="text-gray-700 font-medium">Hello, {user.name || user.email}!</span>
+          <span className="text-gray-700 font-medium whitespace-nowrap">
+            Hello, <span className="text-[#219377]">{user.name || user.email}</span>!
+          </span>
         )}
         <button
-          onClick={logout}
-          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-150 ease-in-out shadow-md"
+          onClick={handleLogout}
+          className="px-4 py-2 bg-[#ff6b6b] hover:bg-red-700 text-white rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-[#ffbd59] focus:ring-opacity-60 transition"
         >
           Logout
         </button>
