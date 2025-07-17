@@ -13,6 +13,7 @@ import { getAllProperties } from "../../services/propertyService.js"; // To fetc
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import { useGlobalAlert } from "../../contexts/GlobalAlertContext.jsx";
 import useForm from "../../hooks/useForm.js";
+import { ROUTES } from "../../utils/constants.js";
 
 // Define primary and secondary colors for consistent styling
 const PRIMARY_COLOR = "#219377"; // Green

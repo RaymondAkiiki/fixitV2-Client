@@ -7,12 +7,8 @@ import api from "../api/axios.js";
  * @returns {Promise<object>} The response data from the API.
  */
 export const loginUser = async (email, password) => {
-    try {
-        const res = await api.post("/auth/login", { email, password });
-        return res.data;
-    } catch (error) {
-        throw error; // Let the calling component handle the error
-    }
+    const res = await api.post("/auth/login", { email, password });
+    return res.data;
 };
 
 /**
@@ -21,12 +17,8 @@ export const loginUser = async (email, password) => {
  * @returns {Promise<object>} The response data from the API.
  */
 export const registerUser = async (userData) => {
-    try {
-        const res = await api.post("/auth/register", userData);
-        return res.data;
-    } catch (error) {
-        throw error;
-    }
+    const res = await api.post("/auth/register", userData);
+    return res.data;
 };
 
 /**
@@ -35,14 +27,10 @@ export const registerUser = async (userData) => {
  * @returns {Promise<object>} The response data from the API, containing the user profile.
  */
 export const getMe = async () => {
-    try {
-        // This endpoint is more standard for getting the current user from a token.
-        // Ensure your backend has a route like GET /api/auth/me that is protected.
-        const res = await api.get("/auth/me");
-        return res.data;
-    } catch (error) {
-        throw error;
-    }
+    // This endpoint is more standard for getting the current user from a token.
+    // Ensure your backend has a route like GET /api/auth/me that is protected.
+    const res = await api.get("/auth/me");
+    return res.data;
 };
 
 /**

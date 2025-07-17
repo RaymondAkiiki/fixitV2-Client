@@ -15,13 +15,8 @@ const createGetRequest = (endpoint) => async (idOrParams = {}, signal) => {
         config.params = idOrParams;
     }
 
-    try {
-        const res = await api.get(url, config);
-        return res.data;
-    } catch (error) {
-        // Let the axios interceptor and calling component handle the error.
-        throw error;
-    }
+    const res = await api.get(url, config);
+    return res.data;
 };
 
 // A helper to create a reusable function for POST, PUT, DELETE requests.
@@ -31,12 +26,8 @@ const createMutationRequest = (method, endpoint) => async (id, data) => {
         url = `${url}/${id}`;
     }
     
-    try {
-        const res = await api[method](url, data);
-        return res.data;
-    } catch (error) {
-        throw error;
-    }
+    const res = await api[method](url, data);
+    return res.data;
 };
 
 // === Dashboard & System ===

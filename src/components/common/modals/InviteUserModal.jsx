@@ -1,5 +1,5 @@
 // frontend/src/components/common/modals/InviteUserModal.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import Modal from '../Modal.jsx'; // Ensure correct path
 import Button from '../Button.jsx'; // Ensure correct path
 import Input from '../Input.jsx'; // Ensure correct path

@@ -1,6 +1,6 @@
 // frontend/src/utils/logger.js
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = import.meta.env.NODE_ENV === 'development' || import.meta.env.DEV;
 
 const BACKEND_API_BASE_URL = isDevelopment
     ? 'http://localhost:5000'
