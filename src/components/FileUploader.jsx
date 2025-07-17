@@ -32,7 +32,7 @@ const FileUploader = ({ onUpload, accept = "", label = "Upload File" }) => {
       await onUpload(formData);
       setFile(null);
       setDesc("");
-    } catch (err) {
+    } catch {
       setError("Failed to upload file.");
     } finally {
       setLoading(false);

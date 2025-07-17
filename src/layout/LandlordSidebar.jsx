@@ -111,7 +111,7 @@ const LandlordSidebar = ({ isSidebarOpen, toggleSidebar }) => {
           </span>
         </div>
         <nav className="flex-grow p-4 space-y-2">
-          {NAV_LINKS.map(({ to, label, icon: Icon }) => (
+          {NAV_LINKS.map(({ to, label }) => (
             <NavLink
               key={to}
               to={to}

@@ -40,7 +40,7 @@ const useForm = (initialValues, validate, onSubmitCallback) => {
             try {
                 await onSubmitCallback(values);
                 // The calling component is responsible for success actions (like resetting the form or navigating).
-            } catch (err) {
+            } catch {
                 // The error is already handled by useApi and shown by GlobalAlertContext.
                 // No need to log it again here. The component's catch block will see it.
             } finally {

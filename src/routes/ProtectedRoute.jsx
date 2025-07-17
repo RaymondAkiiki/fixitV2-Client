@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { usePermission } from "../contexts/PermissionContext.jsx";
 import { USER_ROLES, ROUTES } from "../utils/constants.js";
 import Spinner from "../components/common/Spinner.jsx";
-import MainLayout from '../layouts/MainLayout.jsx'; // Import your main app layout
+import MainLayout from '../layout/MainLayout.jsx'; // Import your main app layout
 
 /**
  * A shared loading component to provide a consistent UI during auth checks.

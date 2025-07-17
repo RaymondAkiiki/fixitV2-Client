@@ -1,23 +1,16 @@
 import React from 'react';
 import { Bell, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const PRIMARY_COLOR = '#219377';
 const SECONDARY_COLOR = '#ffbd59';
 
 const LandlordNavbar = ({
   brandColor = PRIMARY_COLOR,
-  sidebarBg = "#1a3b34",
   activeColor = SECONDARY_COLOR,
 }) => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+  const { user } = useAuth();
 
   return (
     <header

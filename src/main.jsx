@@ -14,7 +14,7 @@ import App from "./App.jsx";
 import { AuthProvider } from "./contexts/AuthContext.jsx"; // Corrected path
 import { PermissionProvider } from "./contexts/PermissionContext.jsx"; // Corrected path
 import { NotificationProvider } from "./contexts/NotificationContext.jsx"; // Corrected path
-import { GlobalAlertProvider } from "./contexts/GlobalAlertContext.jsx";   // Corrected path
+import { GlobalAlertProvider } from "./contexts/GlobalAlertContext.jsx"; // Corrected path
 import { PropertyProvider } from './contexts/PropertyContext.jsx'; // Corrected path
 import { LeaseProvider } from './contexts/LeaseContext.jsx'; // Corrected path
 import { RentProvider } from './contexts/RentContext.jsx'; // Corrected path
