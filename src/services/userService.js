@@ -6,10 +6,12 @@ const USER_BASE_URL = '/users';
 /**
  * Get current user's profile.
  * GET /api/users/profile
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  */
 export const getMyProfile = async (signal) => {
     try {
-        const res = await api.get(`${USER_BASE_URL}/profile`, { signal });
+        // Corrected: Pass signal directly as a property of the config object
+        const res = await api.get(`${USER_BASE_URL}/profile`, { signal }); 
         return res.data;
     } catch (error) {
         if (axios.isCancel(error)) {
@@ -33,6 +35,8 @@ export const updateMyProfile = async (profileData) => {
 
 /**
  * For ADMIN, PM, Landlord: Get all users with filtering.
+ * @param {object} [params={}] - Query parameters.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  */
 export const getAllUsers = async (params = {}, signal) => {
     try {
@@ -60,9 +64,12 @@ export const createUser = async (userData) => {
 
 /**
  * Get specific user details by ID.
+ * @param {string} userId
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  */
 export const getUserById = async (userId, signal) => {
     try {
+        // Corrected: Pass signal directly as a property of the config object
         const res = await api.get(`${USER_BASE_URL}/${userId}`, { signal });
         return res.data;
     } catch (error) {

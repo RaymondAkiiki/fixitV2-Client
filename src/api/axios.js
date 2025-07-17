@@ -17,7 +17,7 @@ const getTokenFromLocalStorage = () => {
  * Create an Axios instance for all API requests.
  */
 const api = axios.create({
-    baseURL: `${import.meta.env.VITE_BACKEND_API_URL}/api`,
+    baseURL: `${import.meta.env.VITE_API_BASE_URL}/api`,
     withCredentials: false,
     headers: {
         "Content-Type": "application/json",

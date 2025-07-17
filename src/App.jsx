@@ -153,257 +153,236 @@ const App = () => {
       </Route>
 
       {/* Protected Routes for Admin */}
-      <Route
-        path={ROUTES.ADMIN_BASE}
-        element={
-          <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
-            <AdminLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to={ROUTES.ADMIN_DASHBOARD_RELATIVE} replace />} />
-        <Route path={ROUTES.ADMIN_DASHBOARD_RELATIVE} element={<AdminDashboardPage />} />
-        <Route path="profile" element={<AdminProfilePage />} />
-        <Route path="system" element={<AdminSystemPage />} />
+      <Route element={<ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]} />}>
+        <Route path={ROUTES.ADMIN_BASE} element={<AdminLayout />}>
+            {/* The index route now correctly redirects from /admin to /admin/dashboard */}
+            <Route index element={<Navigate to={ROUTES.ADMIN_DASHBOARD} replace />} />
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="profile" element={<AdminProfilePage />} />
+            <Route path="system" element={<AdminSystemPage />} />
 
-        {/* Feature-based pages accessible by Admin */}
-        <Route path="users" element={<UserListPage />} />
-        <Route path="users/:userId" element={<UserDetailPage />} />
-        <Route path="users/add" element={<UserFormPage />} /> {/* Admin can add/edit users */}
-        <Route path="users/edit/:userId" element={<UserFormPage />} />
+            {/* Feature-based pages accessible by Admin */}
+            <Route path="users" element={<UserListPage />} />
+            <Route path="users/:userId" element={<UserDetailPage />} />
+            <Route path="users/add" element={<UserFormPage />} /> {/* Admin can add/edit users */}
+            <Route path="users/edit/:userId" element={<UserFormPage />} />
 
-        <Route path="properties" element={<PropertyListPage />} />
-        <Route path="properties/:propertyId" element={<PropertyDetailPage />} />
-        <Route path="properties/add" element={<PropertyFormPage />} />
-        <Route path="properties/edit/:propertyId" element={<PropertyFormPage />} />
-        <Route path="properties/:propertyId/units" element={<UnitListPage />} /> {/* Units nested under properties */}
-        <Route path="properties/:propertyId/units/:unitId" element={<UnitDetailPage />} />
-        <Route path="properties/:propertyId/units/add" element={<UnitFormPage />} />
-        <Route path="properties/:propertyId/units/edit/:unitId" element={<UnitFormPage />} />
+            <Route path="properties" element={<PropertyListPage />} />
+            <Route path="properties/:propertyId" element={<PropertyDetailPage />} />
+            <Route path="properties/add" element={<PropertyFormPage />} />
+            <Route path="properties/edit/:propertyId" element={<PropertyFormPage />} />
+            <Route path="properties/:propertyId/units" element={<UnitListPage />} /> {/* Units nested under properties */}
+            <Route path="properties/:propertyId/units/:unitId" element={<UnitDetailPage />} />
+            <Route path="properties/:propertyId/units/add" element={<UnitFormPage />} />
+            <Route path="properties/:propertyId/units/edit/:unitId" element={<UnitFormPage />} />
 
-        <Route path="requests" element={<RequestListPage />} />
-        <Route path="requests/:requestId" element={<RequestDetailPage />} />
-        <Route path="requests/add" element={<RequestFormPage />} />
-        <Route path="requests/edit/:requestId" element={<RequestFormPage />} />
+            <Route path="requests" element={<RequestListPage />} />
+            <Route path="requests/:requestId" element={<RequestDetailPage />} />
+            <Route path="requests/add" element={<RequestFormPage />} />
+            <Route path="requests/edit/:requestId" element={<RequestFormPage />} />
 
-        <Route path="scheduled-maintenance" element={<ScheduledMaintenanceListPage />} />
-        <Route path="scheduled-maintenance/:taskId" element={<ScheduledMaintenanceDetailPage />} />
-        <Route path="scheduled-maintenance/add" element={<ScheduledMaintenanceFormPage />} />
-        <Route path="scheduled-maintenance/edit/:taskId" element={<ScheduledMaintenanceFormPage />} />
+            <Route path="scheduled-maintenance" element={<ScheduledMaintenanceListPage />} />
+            <Route path="scheduled-maintenance/:taskId" element={<ScheduledMaintenanceDetailPage />} />
+            <Route path="scheduled-maintenance/add" element={<ScheduledMaintenanceFormPage />} />
+            <Route path="scheduled-maintenance/edit/:taskId" element={<ScheduledMaintenanceFormPage />} />
 
-        <Route path="vendors" element={<VendorListPage />} />
-        <Route path="vendors/:vendorId" element={<VendorDetailPage />} />
-        <Route path="vendors/add" element={<VendorFormPage />} />
-        <Route path="vendors/edit/:vendorId" element={<VendorFormPage />} />
+            <Route path="vendors" element={<VendorListPage />} />
+            <Route path="vendors/:vendorId" element={<VendorDetailPage />} />
+            <Route path="vendors/add" element={<VendorFormPage />} />
+            <Route path="vendors/edit/:vendorId" element={<VendorFormPage />} />
 
-        <Route path="invites" element={<InviteListPage />} />
-        <Route path="invites/send" element={<InviteFormPage />} /> {/* Admin can send invites */}
+            <Route path="invites" element={<InviteListPage />} />
+            <Route path="invites/send" element={<InviteFormPage />} /> {/* Admin can send invites */}
 
-        <Route path="leases" element={<LeaseListPage />} />
-        <Route path="leases/:leaseId" element={<LeaseDetailPage />} />
-        <Route path="leases/add" element={<LeaseFormPage />} />
-        <Route path="leases/edit/:leaseId" element={<LeaseFormPage />} />
+            <Route path="leases" element={<LeaseListPage />} />
+            <Route path="leases/:leaseId" element={<LeaseDetailPage />} />
+            <Route path="leases/add" element={<LeaseFormPage />} />
+            <Route path="leases/edit/:leaseId" element={<LeaseFormPage />} />
 
-        <Route path="payments" element={<PaymentListPage />} />
-        <Route path="payments/:paymentId" element={<PaymentDetailPage />} />
-        <Route path="payments/record" element={<PaymentFormPage />} /> {/* Admin can record payments */}
+            <Route path="payments" element={<PaymentListPage />} />
+            <Route path="payments/:paymentId" element={<PaymentDetailPage />} />
+            <Route path="payments/record" element={<PaymentFormPage />} /> {/* Admin can record payments */}
 
-        <Route path="messages" element={<MessageListPage />} />
-        <Route path="messages/:messageId" element={<MessageDetailPage />} />
-        <Route path="messages/compose" element={<MessageComposePage />} />
+            <Route path="messages" element={<MessageListPage />} />
+            <Route path="messages/:messageId" element={<MessageDetailPage />} />
+            <Route path="messages/compose" element={<MessageComposePage />} />
 
-        <Route path="notifications" element={<NotificationListPage />} />
+            <Route path="notifications" element={<NotificationListPage />} />
 
-        <Route path="onboarding" element={<OnboardingListPage />} />
-        <Route path="onboarding/:onboardingId" element={<OnboardingDetailPage />} />
-        <Route path="onboarding/add" element={<OnboardingFormPage />} />
-        <Route path="onboarding/edit/:onboardingId" element={<OnboardingFormPage />} />
+            <Route path="onboarding" element={<OnboardingListPage />} />
+            <Route path="onboarding/:onboardingId" element={<OnboardingDetailPage />} />
+            <Route path="onboarding/add" element={<OnboardingFormPage />} />
+            <Route path="onboarding/edit/:onboardingId" element={<OnboardingFormPage />} />
 
-        <Route path="reports" element={<ReportsDashboardPage />} />
-        <Route path="reports/maintenance" element={<MaintenanceReportsPage />} />
-        <Route path="reports/vendor-performance" element={<VendorPerformanceReportsPage />} />
-        <Route path="reports/rent" element={<RentReportsPage />} />
+            <Route path="reports" element={<ReportsDashboardPage />} />
+            <Route path="reports/maintenance" element={<MaintenanceReportsPage />} />
+            <Route path="reports/vendor-performance" element={<VendorPerformanceReportsPage />} />
+            <Route path="reports/rent" element={<RentReportsPage />} />
 
-        <Route path="audit-logs" element={<AuditLogListPage />} />
-        <Route path="media-gallery" element={<MediaGalleryPage />} /> {/* Centralized media management */}
+            <Route path="audit-logs" element={<AuditLogListPage />} />
+            <Route path="media-gallery" element={<MediaGalleryPage />} /> {/* Centralized media management */}
+       </Route>
       </Route>
 
-      {/* Protected Routes for Property Manager */}
-      <Route
-        path="/pm"
-        element={
-          <ProtectedRoute allowedRoles={[USER_ROLES.PROPERTY_MANAGER, USER_ROLES.ADMIN]}> {/* Admin can also access PM routes */}
-            <PropertyManagerLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to={ROUTES.PM_DASHBOARD.split('/')[2]} replace />} />
-        <Route path={ROUTES.PM_DASHBOARD.split('/')[2]} element={<PMDashboardPage />} />
-        <Route path="profile" element={<PMProfilePage />} />
+       {/* Protected Routes for Property Manager */}
+      <Route element={<ProtectedRoute allowedRoles={[USER_ROLES.PROPERTY_MANAGER, USER_ROLES.ADMIN]} />}>
+          <Route path="/pm" element={<PropertyManagerLayout />}>
+              <Route index element={<Navigate to={ROUTES.PM_DASHBOARD} replace />} />
+              <Route path="dashboard" element={<PMDashboardPage />} />
+                    
+              {/* Feature-based pages accessible by PM */}
+              <Route path="users" element={<UserListPage />} /> {/* PM can manage users associated with their properties */}
+              <Route path="users/:userId" element={<UserDetailPage />} />
+              <Route path="users/add" element={<UserFormPage />} />
+              <Route path="users/edit/:userId" element={<UserFormPage />} />
 
-        {/* Feature-based pages accessible by PM */}
-        <Route path="users" element={<UserListPage />} /> {/* PM can manage users associated with their properties */}
-        <Route path="users/:userId" element={<UserDetailPage />} />
-        <Route path="users/add" element={<UserFormPage />} />
-        <Route path="users/edit/:userId" element={<UserFormPage />} />
+              <Route path="properties" element={<PropertyListPage />} />
+              <Route path="properties/:propertyId" element={<PropertyDetailPage />} />
+              <Route path="properties/add" element={<PropertyFormPage />} />
+              <Route path="properties/edit/:propertyId" element={<PropertyFormPage />} />
+              <Route path="properties/:propertyId/units" element={<UnitListPage />} />
+              <Route path="properties/:propertyId/units/:unitId" element={<UnitDetailPage />} />
+              <Route path="properties/:propertyId/units/add" element={<UnitFormPage />} />
+              <Route path="properties/:propertyId/units/edit/:unitId" element={<UnitFormPage />} />
 
-        <Route path="properties" element={<PropertyListPage />} />
-        <Route path="properties/:propertyId" element={<PropertyDetailPage />} />
-        <Route path="properties/add" element={<PropertyFormPage />} />
-        <Route path="properties/edit/:propertyId" element={<PropertyFormPage />} />
-        <Route path="properties/:propertyId/units" element={<UnitListPage />} />
-        <Route path="properties/:propertyId/units/:unitId" element={<UnitDetailPage />} />
-        <Route path="properties/:propertyId/units/add" element={<UnitFormPage />} />
-        <Route path="properties/:propertyId/units/edit/:unitId" element={<UnitFormPage />} />
+              <Route path="requests" element={<RequestListPage />} />
+              <Route path="requests/:requestId" element={<RequestDetailPage />} />
+              <Route path="requests/add" element={<RequestFormPage />} />
+              <Route path="requests/edit/:requestId" element={<RequestFormPage />} />
 
-        <Route path="requests" element={<RequestListPage />} />
-        <Route path="requests/:requestId" element={<RequestDetailPage />} />
-        <Route path="requests/add" element={<RequestFormPage />} />
-        <Route path="requests/edit/:requestId" element={<RequestFormPage />} />
+              <Route path="scheduled-maintenance" element={<ScheduledMaintenanceListPage />} />
+              <Route path="scheduled-maintenance/:taskId" element={<ScheduledMaintenanceDetailPage />} />
+              <Route path="scheduled-maintenance/add" element={<ScheduledMaintenanceFormPage />} />
+              <Route path="scheduled-maintenance/edit/:taskId" element={<ScheduledMaintenanceFormPage />} />
 
-        <Route path="scheduled-maintenance" element={<ScheduledMaintenanceListPage />} />
-        <Route path="scheduled-maintenance/:taskId" element={<ScheduledMaintenanceDetailPage />} />
-        <Route path="scheduled-maintenance/add" element={<ScheduledMaintenanceFormPage />} />
-        <Route path="scheduled-maintenance/edit/:taskId" element={<ScheduledMaintenanceFormPage />} />
+              <Route path="vendors" element={<VendorListPage />} />
+              <Route path="vendors/:vendorId" element={<VendorDetailPage />} />
+              <Route path="vendors/add" element={<VendorFormPage />} />
+              <Route path="vendors/edit/:vendorId" element={<VendorFormPage />} />
 
-        <Route path="vendors" element={<VendorListPage />} />
-        <Route path="vendors/:vendorId" element={<VendorDetailPage />} />
-        <Route path="vendors/add" element={<VendorFormPage />} />
-        <Route path="vendors/edit/:vendorId" element={<VendorFormPage />} />
+              <Route path="invites" element={<InviteListPage />} />
+              <Route path="invites/send" element={<InviteFormPage />} />
 
-        <Route path="invites" element={<InviteListPage />} />
-        <Route path="invites/send" element={<InviteFormPage />} />
+              <Route path="leases" element={<LeaseListPage />} />
+              <Route path="leases/:leaseId" element={<LeaseDetailPage />} />
+              <Route path="leases/add" element={<LeaseFormPage />} />
+              <Route path="leases/edit/:leaseId" element={<LeaseFormPage />} />
 
-        <Route path="leases" element={<LeaseListPage />} />
-        <Route path="leases/:leaseId" element={<LeaseDetailPage />} />
-        <Route path="leases/add" element={<LeaseFormPage />} />
-        <Route path="leases/edit/:leaseId" element={<LeaseFormPage />} />
+              <Route path="payments" element={<PaymentListPage />} />
+              <Route path="payments/:paymentId" element={<PaymentDetailPage />} />
+              <Route path="payments/record" element={<PaymentFormPage />} />
 
-        <Route path="payments" element={<PaymentListPage />} />
-        <Route path="payments/:paymentId" element={<PaymentDetailPage />} />
-        <Route path="payments/record" element={<PaymentFormPage />} />
+              <Route path="messages" element={<MessageListPage />} />
+              <Route path="messages/:messageId" element={<MessageDetailPage />} />
+              <Route path="messages/compose" element={<MessageComposePage />} />
 
-        <Route path="messages" element={<MessageListPage />} />
-        <Route path="messages/:messageId" element={<MessageDetailPage />} />
-        <Route path="messages/compose" element={<MessageComposePage />} />
+              <Route path="notifications" element={<NotificationListPage />} />
 
-        <Route path="notifications" element={<NotificationListPage />} />
+              <Route path="onboarding" element={<OnboardingListPage />} />
+              <Route path="onboarding/:onboardingId" element={<OnboardingDetailPage />} />
+              <Route path="onboarding/add" element={<OnboardingFormPage />} />
+              <Route path="onboarding/edit/:onboardingId" element={<OnboardingFormPage />} />
 
-        <Route path="onboarding" element={<OnboardingListPage />} />
-        <Route path="onboarding/:onboardingId" element={<OnboardingDetailPage />} />
-        <Route path="onboarding/add" element={<OnboardingFormPage />} />
-        <Route path="onboarding/edit/:onboardingId" element={<OnboardingFormPage />} />
-
-        <Route path="reports" element={<ReportsDashboardPage />} />
-        <Route path="reports/maintenance" element={<MaintenanceReportsPage />} />
-        <Route path="reports/vendor-performance" element={<VendorPerformanceReportsPage />} />
-        <Route path="reports/rent" element={<RentReportsPage />} />
+              <Route path="reports" element={<ReportsDashboardPage />} />
+              <Route path="reports/maintenance" element={<MaintenanceReportsPage />} />
+              <Route path="reports/vendor-performance" element={<VendorPerformanceReportsPage />} />
+              <Route path="reports/rent" element={<RentReportsPage />} />
+          </Route>
       </Route>
 
-      {/* Protected Routes for Landlord */}
-      <Route
-        path="/landlord"
-        element={
-          <ProtectedRoute allowedRoles={[USER_ROLES.LANDLORD, USER_ROLES.ADMIN]}> {/* Admin can also access Landlord routes */}
-            <LandlordLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to={ROUTES.LANDLORD_DASHBOARD.split('/')[2]} replace />} />
-        <Route path={ROUTES.LANDLORD_DASHBOARD.split('/')[2]} element={<LandlordDashboardPage />} />
-        <Route path="profile" element={<LandlordProfilePage />} />
+       {/* Protected Routes for Landlord (Now using the correct pattern) */}
+      <Route element={<ProtectedRoute allowedRoles={[USER_ROLES.LANDLORD, USER_ROLES.ADMIN]} />}>
+        <Route path="/landlord" element={<LandlordLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<LandlordDashboardPage />} />
+          <Route path="profile" element={<LandlordProfilePage />} />
 
-        {/* Feature-based pages accessible by Landlord */}
-        <Route path="users" element={<UserListPage />} /> {/* Landlord can manage users associated with their properties */}
-        <Route path="users/:userId" element={<UserDetailPage />} />
-        <Route path="users/add" element={<UserFormPage />} />
-        <Route path="users/edit/:userId" element={<UserFormPage />} />
+          {/* Feature-based pages accessible by Landlord */}
+          <Route path="users" element={<UserListPage />} /> {/* Landlord can manage users associated with their properties */}
+          <Route path="users/:userId" element={<UserDetailPage />} />
+          <Route path="users/add" element={<UserFormPage />} />
+          <Route path="users/edit/:userId" element={<UserFormPage />} />
 
-        <Route path="properties" element={<PropertyListPage />} />
-        <Route path="properties/:propertyId" element={<PropertyDetailPage />} />
-        <Route path="properties/add" element={<PropertyFormPage />} />
-        <Route path="properties/edit/:propertyId" element={<PropertyFormPage />} />
-        <Route path="properties/:propertyId/units" element={<UnitListPage />} />
-        <Route path="properties/:propertyId/units/:unitId" element={<UnitDetailPage />} />
-        <Route path="properties/:propertyId/units/add" element={<UnitFormPage />} />
-        <Route path="properties/:propertyId/units/edit/:unitId" element={<UnitFormPage />} />
+          <Route path="properties" element={<PropertyListPage />} />
+          <Route path="properties/:propertyId" element={<PropertyDetailPage />} />
+          <Route path="properties/add" element={<PropertyFormPage />} />
+          <Route path="properties/edit/:propertyId" element={<PropertyFormPage />} />
+          <Route path="properties/:propertyId/units" element={<UnitListPage />} />
+          <Route path="properties/:propertyId/units/:unitId" element={<UnitDetailPage />} />
+          <Route path="properties/:propertyId/units/add" element={<UnitFormPage />} />
+          <Route path="properties/:propertyId/units/edit/:unitId" element={<UnitFormPage />} />
 
-        <Route path="requests" element={<RequestListPage />} />
-        <Route path="requests/:requestId" element={<RequestDetailPage />} />
-        <Route path="requests/add" element={<RequestFormPage />} />
-        <Route path="requests/edit/:requestId" element={<RequestFormPage />} />
+          <Route path="requests" element={<RequestListPage />} />
+          <Route path="requests/:requestId" element={<RequestDetailPage />} />
+          <Route path="requests/add" element={<RequestFormPage />} />
+          <Route path="requests/edit/:requestId" element={<RequestFormPage />} />
 
-        <Route path="scheduled-maintenance" element={<ScheduledMaintenanceListPage />} />
-        <Route path="scheduled-maintenance/:taskId" element={<ScheduledMaintenanceDetailPage />} />
-        <Route path="scheduled-maintenance/add" element={<ScheduledMaintenanceFormPage />} />
-        <Route path="scheduled-maintenance/edit/:taskId" element={<ScheduledMaintenanceFormPage />} />
+          <Route path="scheduled-maintenance" element={<ScheduledMaintenanceListPage />} />
+          <Route path="scheduled-maintenance/:taskId" element={<ScheduledMaintenanceDetailPage />} />
+          <Route path="scheduled-maintenance/add" element={<ScheduledMaintenanceFormPage />} />
+          <Route path="scheduled-maintenance/edit/:taskId" element={<ScheduledMaintenanceFormPage />} />
 
-        <Route path="vendors" element={<VendorListPage />} />
-        <Route path="vendors/:vendorId" element={<VendorDetailPage />} />
-        <Route path="vendors/add" element={<VendorFormPage />} />
-        <Route path="vendors/edit/:vendorId" element={<VendorFormPage />} />
+          <Route path="vendors" element={<VendorListPage />} />
+          <Route path="vendors/:vendorId" element={<VendorDetailPage />} />
+          <Route path="vendors/add" element={<VendorFormPage />} />
+          <Route path="vendors/edit/:vendorId" element={<VendorFormPage />} />
 
-        <Route path="invites" element={<InviteListPage />} />
-        <Route path="invites/send" element={<InviteFormPage />} />
+          <Route path="invites" element={<InviteListPage />} />
+          <Route path="invites/send" element={<InviteFormPage />} />
 
-        <Route path="leases" element={<LeaseListPage />} />
-        <Route path="leases/:leaseId" element={<LeaseDetailPage />} />
-        <Route path="leases/add" element={<LeaseFormPage />} />
-        <Route path="leases/edit/:leaseId" element={<LeaseFormPage />} />
+          <Route path="leases" element={<LeaseListPage />} />
+          <Route path="leases/:leaseId" element={<LeaseDetailPage />} />
+          <Route path="leases/add" element={<LeaseFormPage />} />
+          <Route path="leases/edit/:leaseId" element={<LeaseFormPage />} />
 
-        <Route path="payments" element={<PaymentListPage />} />
-        <Route path="payments/:paymentId" element={<PaymentDetailPage />} />
-        <Route path="payments/record" element={<PaymentFormPage />} />
+          <Route path="payments" element={<PaymentListPage />} />
+          <Route path="payments/:paymentId" element={<PaymentDetailPage />} />
+          <Route path="payments/record" element={<PaymentFormPage />} />
 
-        <Route path="messages" element={<MessageListPage />} />
-        <Route path="messages/:messageId" element={<MessageDetailPage />} />
-        <Route path="messages/compose" element={<MessageComposePage />} />
+          <Route path="messages" element={<MessageListPage />} />
+          <Route path="messages/:messageId" element={<MessageDetailPage />} />
+          <Route path="messages/compose" element={<MessageComposePage />} />
 
-        <Route path="notifications" element={<NotificationListPage />} />
+          <Route path="notifications" element={<NotificationListPage />} />
 
-        <Route path="onboarding" element={<OnboardingListPage />} />
-        <Route path="onboarding/:onboardingId" element={<OnboardingDetailPage />} />
-        <Route path="onboarding/add" element={<OnboardingFormPage />} />
-        <Route path="onboarding/edit/:onboardingId" element={<OnboardingFormPage />} />
+          <Route path="onboarding" element={<OnboardingListPage />} />
+          <Route path="onboarding/:onboardingId" element={<OnboardingDetailPage />} />
+          <Route path="onboarding/add" element={<OnboardingFormPage />} />
+          <Route path="onboarding/edit/:onboardingId" element={<OnboardingFormPage />} />
 
-        <Route path="reports" element={<ReportsDashboardPage />} />
-        <Route path="reports/maintenance" element={<MaintenanceReportsPage />} />
-        <Route path="reports/vendor-performance" element={<VendorPerformanceReportsPage />} />
-        <Route path="reports/rent" element={<RentReportsPage />} />
+          <Route path="reports" element={<ReportsDashboardPage />} />
+          <Route path="reports/maintenance" element={<MaintenanceReportsPage />} />
+          <Route path="reports/vendor-performance" element={<VendorPerformanceReportsPage />} />
+          <Route path="reports/rent" element={<RentReportsPage />} />
+        </Route>
       </Route>
 
-      {/* Protected Routes for Tenant */}
-      <Route
-        path="/tenant"
-        element={
-          <ProtectedRoute allowedRoles={[USER_ROLES.TENANT]}>
-            <TenantLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to={ROUTES.TENANT_DASHBOARD.split('/')[2]} replace />} />
-        <Route path={ROUTES.TENANT_DASHBOARD.split('/')[2]} element={<TenantDashboardPage />} />
-        <Route path="profile" element={<TenantProfilePage />} />
+      {/* Protected Routes for Tenant (Now using the correct pattern) */}
+      <Route element={<ProtectedRoute allowedRoles={[USER_ROLES.TENANT]} />}>
+        <Route path="/tenant" element={<TenantLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<TenantDashboardPage />} />
 
-        {/* Feature-based pages accessible by Tenant */}
-        <Route path="requests" element={<RequestListPage />} /> {/* Tenants can see their own requests */}
-        <Route path="requests/:requestId" element={<RequestDetailPage />} />
-        <Route path="requests/add" element={<RequestFormPage />} /> {/* Tenants can add requests */}
+            {/* Feature-based pages accessible by Tenant */}
+            <Route path="requests" element={<RequestListPage />} /> {/* Tenants can see their own requests */}
+            <Route path="requests/:requestId" element={<RequestDetailPage />} />
+            <Route path="requests/add" element={<RequestFormPage />} /> {/* Tenants can add requests */}
 
-        <Route path="my-unit" element={<UnitDetailPage />} /> {/* Tenant's specific unit details */}
+            <Route path="my-unit" element={<UnitDetailPage />} /> {/* Tenant's specific unit details */}
 
-        <Route path="scheduled-maintenance" element={<ScheduledMaintenanceListPage />} /> {/* Tenants can view scheduled maintenance for their unit/property */}
-        <Route path="scheduled-maintenance/:taskId" element={<ScheduledMaintenanceDetailPage />} />
+            <Route path="scheduled-maintenance" element={<ScheduledMaintenanceListPage />} /> {/* Tenants can view scheduled maintenance for their unit/property */}
+            <Route path="scheduled-maintenance/:taskId" element={<ScheduledMaintenanceDetailPage />} />
 
-        <Route path="messages" element={<MessageListPage />} />
-        <Route path="messages/:messageId" element={<MessageDetailPage />} />
-        <Route path="messages/compose" element={<MessageComposePage />} />
+            <Route path="messages" element={<MessageListPage />} />
+            <Route path="messages/:messageId" element={<MessageDetailPage />} />
+            <Route path="messages/compose" element={<MessageComposePage />} />
 
-        <Route path="notifications" element={<NotificationListPage />} />
+            <Route path="notifications" element={<NotificationListPage />} />
 
-        <Route path="onboarding" element={<OnboardingListPage />} />
-        <Route path="onboarding/:onboardingId" element={<OnboardingDetailPage />} />
-        {/* Tenants can't add/edit onboarding forms, only view/complete */}
+            <Route path="onboarding" element={<OnboardingListPage />} />
+            <Route path="onboarding/:onboardingId" element={<OnboardingDetailPage />} />
+            {/* Tenants can't add/edit onboarding forms, only view/complete */}
+        </Route>
       </Route>
 
       {/* Catch-all for 404 or access denied */}

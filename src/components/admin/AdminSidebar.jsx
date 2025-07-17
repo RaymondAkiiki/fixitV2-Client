@@ -1,78 +1,88 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  LayoutDashboard, Users, Building, FileText, DollarSign, Wrench,
+  CalendarCheck, Truck, MailPlus, MessageSquare, Bell, ClipboardList,
+  BarChart3, History, Image, ShieldCheck, UserCircle, LogOut
+} from 'lucide-react';
 
-const links = [
-  { to: "/admin/dashboard", label: "Dashboard" },
-  { to: "/admin/users", label: "User Management" },
-  { to: "/admin/properties", label: "Properties" },
-  { to: "/admin/units", label: "Units" },
-  { to: "/admin/requests", label: "Maintenance Requests" },
-  { to: "/admin/vendors", label: "Vendors" },
-  { to: "/admin/invites", label: "Invites" },
-  { to: "/admin/audit-logs", label: "Audit Logs" },
-  { to: "/admin/media", label: "Media Management" },
-  { to: "/admin/system", label: "System & Notifications" },
+const navLinks = [
+  { to: "/admin/dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
+  { to: "/admin/profile", label: "My Profile", icon: <UserCircle size={20} /> },
+  { to: "/admin/users", label: "Users", icon: <Users size={20} /> },
+  { to: "/admin/properties", label: "Properties", icon: <Building size={20} /> },
+  { to: "/admin/leases", label: "Leases", icon: <FileText size={20} /> },
+  { to: "/admin/payments", label: "Payments", icon: <DollarSign size={20} /> },
+  { to: "/admin/requests", label: "Maintenance", icon: <Wrench size={20} /> },
+  { to: "/admin/scheduled-maintenance", label: "Scheduled Tasks", icon: <CalendarCheck size={20} /> },
+  { to: "/admin/vendors", label: "Vendors", icon: <Truck size={20} /> },
+  { to: "/admin/invites", label: "Invites", icon: <MailPlus size={20} /> },
+  { to: "/admin/messages", label: "Messages", icon: <MessageSquare size={20} /> },
+  { to: "/admin/notifications", label: "Notifications", icon: <Bell size={20} /> },
+  { to: "/admin/onboarding", label: "Onboarding", icon: <ClipboardList size={20} /> },
+  { to: "/admin/reports", label: "Reports", icon: <BarChart3 size={20} /> },
+  { to: "/admin/audit-logs", label: "Audit Logs", icon: <History size={20} /> },
+  { to: "/admin/media-gallery", label: "Media Gallery", icon: <Image size={20} /> },
+  { to: "/admin/system", label: "System Health", icon: <ShieldCheck size={20} /> },
 ];
 
 const AdminSidebar = ({ open, onClose }) => {
-  // open: boolean for sidebar visibility (on mobile)
-  // onClose: function to close sidebar (on mobile)
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login'); // Redirect to login after logout
+  };
 
   const navLinkClass = ({ isActive }) =>
-    isActive
-      ? 'block px-4 py-2 mt-2 text-sm font-semibold text-white bg-[#1e7f66] rounded-lg'
-      : 'block px-4 py-2 mt-2 text-sm font-semibold text-gray-200 rounded-lg hover:bg-[#1e7f66] hover:text-white';
+    `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200 text-sm font-medium ${
+      isActive
+        ? 'bg-[#ffbd59] text-[#219377] shadow-md'
+        : 'text-gray-200 hover:bg-white/20 hover:text-white'
+    }`;
 
   return (
     <>
       {/* Overlay for mobile */}
       <div
-        className={`fixed inset-0 bg-black bg-opacity-40 z-40 md:hidden transition-opacity duration-300 ${
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        className={`fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden transition-opacity ${
+          open ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
-        aria-hidden={!open}
+        aria-hidden="true"
       />
 
       {/* Sidebar */}
       <aside
-        className={`
-          fixed z-50 top-0 left-0 h-full w-64 bg-[#219377] text-gray-100 transform transition-transform duration-300
-          ${open ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0 md:static md:block
-        `}
-        tabIndex={open ? 0 : -1}
-        aria-label="Admin sidebar"
+        className={`fixed z-50 top-0 left-0 h-full w-64 bg-[#219377] text-white flex flex-col transition-transform duration-300 ease-in-out ${
+          open ? 'translate-x-0' : '-translate-x-full'
+        } md:relative md:translate-x-0`}
       >
-        <div className="flex items-center justify-between h-16 border-b border-[#1e7f66] px-4">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-white/20">
           <span className="text-white font-bold text-xl">Fix It Admin</span>
-          {/* Close button for mobile */}
-          <button
-            className="md:hidden text-gray-200 p-2 focus:outline-none"
-            onClick={onClose}
-            aria-label="Close sidebar"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <button className="md:hidden text-white p-2" onClick={onClose} aria-label="Close sidebar">
+            {/* You can add a close icon here if needed */}
           </button>
         </div>
-        <nav className="flex-grow p-4 space-y-2">
-          {links.map(link => (
+
+        <nav className="flex-1 p-4 overflow-y-auto space-y-1">
+          {navLinks.map(link => (
             <NavLink key={link.to} to={link.to} className={navLinkClass} onClick={onClose}>
-              {link.label}
+              {link.icon}
+              <span>{link.label}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t border-[#1e7f66]">
+
+        <div className="p-4 border-t border-white/20">
           <button
-            onClick={() => {
-              localStorage.clear();
-              window.location.href = '/login';
-            }}
-            className="w-full px-4 py-2 text-sm font-semibold text-center text-white bg-[#ffbd59] rounded-lg hover:bg-[#219377]"
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 text-sm font-semibold text-center text-[#219377] bg-white rounded-lg hover:bg-[#ffbd59] transition-colors duration-200"
           >
-            Logout
+            <LogOut size={18} />
+            <span>Logout</span>
           </button>
         </div>
       </aside>

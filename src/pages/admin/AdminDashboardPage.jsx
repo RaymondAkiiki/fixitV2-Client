@@ -11,6 +11,10 @@ import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
 import { ROUTES, USER_ROLES, REQUEST_STATUSES } from '../../utils/constants.js';
 import { formatDate } from '../../utils/helpers.js';
 
+import {
+  Users, Building2, FileText, Wrench, Truck, Home, CheckCircle2, KeyRound
+} from 'lucide-react';
+
 // Chart.js imports and registration
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
@@ -152,58 +156,17 @@ const AdminDashboardPage = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
 
-      {stats && (
+       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title="Total Users"
-            value={stats.totalUsers || 0}
-            description="Number of registered users"
-            icon="👥"
-          />
-          <StatCard
-            title="Total Properties"
-            value={stats.totalProperties || 0}
-            description="Number of managed properties"
-            icon="🏢"
-          />
-          <StatCard
-            title="Total Leases"
-            value={stats.totalLeases || 0}
-            description="Active and past leases"
-            icon="📄"
-          />
-          <StatCard
-            title="Pending Requests"
-            value={stats.pendingRequests || 0}
-            description="Maintenance requests awaiting action"
-            icon="🛠️"
-            color="orange"
-          />
-          <StatCard
-            title="Total Vendors"
-            value={stats.totalVendors || 0}
-            description="Registered service providers"
-            icon="🚚"
-          />
-          <StatCard
-            title="Total Units"
-            value={stats.totalUnits || 0}
-            description="Available units"
-            icon="🏠"
-          />
-          <StatCard
-            title="Occupied Units"
-            value={stats.occupiedUnits || 0}
-            description="Units currently leased"
-            icon="✅"
-          />
-          <StatCard
-            title="Vacant Units"
-            value={stats.vacantUnits || 0}
-            description="Units available for lease"
-            icon="🔑"
-            color="green"
-          />
+          {/* ✅ FIX: Replace emoji strings with imported icon components */}
+          <StatCard title="Total Users" value={stats.totalUsers || 0} icon={Users} />
+          <StatCard title="Total Properties" value={stats.totalProperties || 0} icon={Building2} />
+          <StatCard title="Total Leases" value={stats.totalLeases || 0} icon={FileText} />
+          <StatCard title="Pending Requests" value={stats.pendingRequests || 0} icon={Wrench} color="#f97316" />
+          <StatCard title="Total Vendors" value={stats.totalVendors || 0} icon={Truck} />
+          <StatCard title="Total Units" value={stats.totalUnits || 0} icon={Home} />
+          <StatCard title="Occupied Units" value={stats.occupiedUnits || 0} icon={CheckCircle2} />
+          <StatCard title="Vacant Units" value={stats.vacantUnits || 0} icon={KeyRound} color="#22c55e" />
         </div>
       )}
 

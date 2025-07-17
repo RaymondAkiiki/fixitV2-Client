@@ -43,19 +43,23 @@ export const PRIORITY_LEVELS = {
     URGENT: 'urgent', // For critical issues (e.g., burst pipe)
 };
 
-export const MAINTENANCE_CATEGORIES = {
-    PLUMBING: 'plumbing', // Consistent lowercase
-    ELECTRICAL: 'electrical', // Consistent lowercase
-    HVAC: 'hvac', // Consistent lowercase
-    STRUCTURAL: 'structural', // Consistent lowercase
-    APPLIANCE: 'appliance', // Consistent lowercase
-    GENERAL: 'general', // Consistent lowercase
-    SECURITY: 'security', // Consistent lowercase
-    PEST_CONTROL: 'pest_control', // Consistent lowercase
-    LANDSCAPING: 'landscaping', // Consistent lowercase
-    CLEANING: 'cleaning', // Consistent lowercase
-    SCHEDULED: 'scheduled', // For requests generated from scheduled maintenance
-};
+export const MAINTENANCE_CATEGORIES = [
+    'plumbing',
+    'electrical',
+    'hvac',
+    'appliance',
+    'structural',
+    'landscaping',
+    'other', // This was in your backend enum, good to include if needed
+    'cleaning',
+    'security',
+    'pest_control',
+    'painting', // From backend enum
+    'roofing', // From backend enum
+    'carpentry', // From backend enum
+    'general_repair', // From backend enum
+    'scheduled', // If you still want this as a category
+];
 
 export const RENT_STATUS_ENUM = {
     DUE: 'due', // Rent is due

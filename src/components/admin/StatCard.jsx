@@ -1,13 +1,15 @@
 import React from 'react';
 
-const StatCard = ({ title, value, icon }) => {
+const StatCard = ({ title, value, icon: Icon, color }) => {
   return (
-    <div className="bg-white p-4 rounded shadow text-center">
-      <div className="flex flex-col items-center">
-        {icon && <div className="mb-2 text-3xl text-[#219377]">{icon}</div>}
-        <p className="text-gray-600 font-medium">{title}</p>
-        <p className="text-2xl font-bold text-[#219377]">{value}</p>
-      </div>
+    <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-100 flex flex-col items-center justify-center text-center">
+      {Icon && (
+        <div className="mb-2 text-3xl" style={{ color: color }}>
+          <Icon size={32} strokeWidth={2.5} />
+        </div>
+      )}
+      <p className="text-gray-600 font-medium text-sm">{title}</p>
+      <p className="text-3xl font-bold" style={{ color: color }}>{value}</p>
     </div>
   );
 };

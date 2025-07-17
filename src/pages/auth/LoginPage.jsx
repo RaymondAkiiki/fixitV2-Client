@@ -15,17 +15,11 @@ const validateLoginForm = (values) => {
     const errors = {};
     if (!values.email.trim()) {
         errors.email = "Email is required.";
-        frontendLogger.debug('LoginPage: Validation error - email missing.');
     } else if (!/\S+@\S+\.\S+/.test(values.email)) {
         errors.email = "Please enter a valid email address.";
-        frontendLogger.debug('LoginPage: Validation error - invalid email format.', { email: values.email });
     }
     if (!values.password.trim()) {
         errors.password = "Password is required.";
-        frontendLogger.debug('LoginPage: Validation error - password missing.');
-    } else if (values.password.length < 8) {
-        errors.password = "Password must be at least 8 characters long.";
-        frontendLogger.debug('LoginPage: Validation error - password too short.');
     }
     return errors;
 };
@@ -37,15 +31,6 @@ const LoginPage = () => {
     const { showError } = useGlobalAlert();
 
     const [showPassword, setShowPassword] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
-
-    useEffect(() => {
-        frontendLogger.debug("LoginPage (Component Render): Current user from AuthContext:", {
-            userId: authContextUser?.id, // Changed _id to id for consistency
-            email: authContextUser?.email,
-            isAuthenticated: authContextUser ? true : false // If authContextUser exists, isAuthenticated is true
-        });
-    }, [authContextUser]);
 
     const {
         values,
@@ -59,44 +44,33 @@ const LoginPage = () => {
         async (formValues) => {
             frontendLogger.info('LoginPage: Handling login form submission.', { email: formValues.email });
             try {
-                const loginResponse = await authLogin(formValues.email, formValues.password); // Renamed `user` to `loginResponse`
-                const loggedInUser = loginResponse.user; // <--- This is the key change! Access the nested `user` object
-
-                frontendLogger.debug("LoginPage (handleSubmit): Login successful, user object received.", {
-                    userId: loggedInUser.id, // Changed _id to id for consistency
-                    userRole: loggedInUser.role,
-                    fromPath: location.state?.from,
-                });
+                const loginResponse = await authLogin(formValues.email, formValues.password);
+                const loggedInUser = loginResponse.user;
 
                 const from = location.state?.from || ROUTES.HOME;
 
-                switch (loggedInUser.role?.toLowerCase()) { // Use `loggedInUser.role`
+                // Role-based redirection logic
+                switch (loggedInUser.role?.toLowerCase()) {
                     case USER_ROLES.TENANT:
-                        frontendLogger.info("LoginPage (Redirect): Navigating to Tenant Dashboard.");
                         navigate(from.startsWith(ROUTES.TENANT_BASE) ? from : ROUTES.TENANT_DASHBOARD, { replace: true });
                         break;
                     case USER_ROLES.LANDLORD:
-                        frontendLogger.info("LoginPage (Redirect): Navigating to Landlord Dashboard.");
                         navigate(from.startsWith(ROUTES.LANDLORD_BASE) ? from : ROUTES.LANDLORD_DASHBOARD, { replace: true });
                         break;
                     case USER_ROLES.PROPERTY_MANAGER:
-                        frontendLogger.info("LoginPage (Redirect): Navigating to Property Manager Dashboard.");
                         navigate(from.startsWith(ROUTES.PM_BASE) ? from : ROUTES.PM_DASHBOARD, { replace: true });
                         break;
                     case USER_ROLES.ADMIN:
-                        frontendLogger.info("LoginPage (Redirect): Navigating to Admin Dashboard.");
                         navigate(from.startsWith(ROUTES.ADMIN_BASE) ? from : ROUTES.ADMIN_DASHBOARD, { replace: true });
                         break;
                     default:
-                        frontendLogger.warn("LoginPage (Redirect): User role not recognized, navigating to default route.", { userRole: loggedInUser.role, fromPath: from });
                         navigate(from, { replace: true });
                         break;
                 }
 
             } catch (err) {
-                const errorMessage = typeof err === "string"
-                    ? err
-                    : err?.message || "Login failed. Please try again.";
+                // This will now catch the error from AuthContext and display it
+                const errorMessage = err.response?.data?.message || err.message || "Login failed. Please check your credentials or contact support.";
                 showError(errorMessage);
                 frontendLogger.error("LoginPage: Login error during form submission.", {
                     email: formValues.email,
@@ -141,7 +115,6 @@ const LoginPage = () => {
                         required
                         error={errors.password}
                         disabled={isSubmitting}
-                        minLength={8}
                         className="pr-10"
                     />
                     <button
@@ -157,17 +130,7 @@ const LoginPage = () => {
 
                 <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                        <input
-                            type="checkbox"
-                            id="rememberMe"
-                            checked={rememberMe}
-                            onChange={(e) => setRememberMe(e.target.checked)}
-                            className="h-4 w-4 text-[#219377] focus:ring-[#219377] border-gray-300 rounded-md"
-                            disabled={isSubmitting}
-                        />
-                        <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-900">
-                            Remember Me
-                        </label>
+                        {/* Remember me checkbox can be added here if needed */}
                     </div>
                     <Link
                         to={ROUTES.FORGOT_PASSWORD}

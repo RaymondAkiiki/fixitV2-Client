@@ -1,17 +1,18 @@
 // client/src/services/requestService.js
 
-import api from "../api/axios.js"; // Corrected import path
+import api from "../api/axios.js";
 
 const REQUEST_BASE_URL = '/requests';
 
 /**
  * Retrieves all maintenance requests accessible to the authenticated user, with filtering.
  * @param {object} [params={}] - Query parameters for filtering (e.g., status, category, priority, propertyId, unitId, search, startDate, endDate, assignedToId, assignedToType, page, limit).
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object[]>} An array of request objects.
  */
-export const getAllRequests = async (params = {}) => {
+export const getAllRequests = async (params = {}, signal) => {
     try {
-        const res = await api.get(REQUEST_BASE_URL, { params }); // This now handles all filtering
+        const res = await api.get(REQUEST_BASE_URL, { params, signal }); // This now handles all filtering
         return res.data;
     } catch (error) {
         console.error("getAllRequests error:", error.response?.data || error.message);
@@ -22,11 +23,12 @@ export const getAllRequests = async (params = {}) => {
 /**
  * Retrieves details for a specific maintenance request.
  * @param {string} id - The ID of the request.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object>} The request object.
  */
-export const getRequestById = async (id) => {
+export const getRequestById = async (id, signal) => {
     try {
-        const res = await api.get(`${REQUEST_BASE_URL}/${id}`);
+        const res = await api.get(`${REQUEST_BASE_URL}/${id}`, { signal });
         return res.data;
     } catch (error) {
         console.error("getRequestById error:", error.response?.data || error.message);

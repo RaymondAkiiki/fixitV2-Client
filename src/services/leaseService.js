@@ -23,11 +23,12 @@ export const createLease = async (leaseData) => {
 /**
  * Retrieves a list of lease agreements.
  * @param {object} [params={}] - Optional query parameters for filtering.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object[]>} An array of lease objects.
  */
-export const getLeases = async (params = {}) => {
+export const getLeases = async (params = {}, signal) => {
     try {
-        const res = await api.get(LEASE_BASE_URL, { params });
+        const res = await api.get(LEASE_BASE_URL, { params, signal });
         return res.data;
     } catch (error) {
         if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
@@ -38,11 +39,12 @@ export const getLeases = async (params = {}) => {
 /**
  * Retrieves details for a specific lease agreement.
  * @param {string} leaseId - The ID of the lease.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object>} The lease object.
  */
-export const getLeaseById = async (leaseId) => {
+export const getLeaseById = async (leaseId, signal) => {
     try {
-        const res = await api.get(`${LEASE_BASE_URL}/${leaseId}`);
+        const res = await api.get(`${LEASE_BASE_URL}/${leaseId}`, { signal });
         return res.data;
     } catch (error) {
         if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
@@ -84,11 +86,12 @@ export const deleteLease = async (leaseId) => {
 /**
  * Retrieves upcoming lease expiries.
  * @param {object} [params={}] - Query parameters.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object[]>} An array of expiring lease objects.
  */
-export const getExpiringLeases = async (params = {}) => {
+export const getExpiringLeases = async (params = {}, signal) => {
     try {
-        const res = await api.get(`${LEASE_BASE_URL}/expiring`, { params });
+        const res = await api.get(`${LEASE_BASE_URL}/expiring`, { params, signal });
         return res.data;
     } catch (error) {
         if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");

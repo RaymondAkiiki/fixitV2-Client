@@ -43,11 +43,12 @@ export const createScheduledMaintenance = async (taskData, mediaFiles = []) => {
 /**
  * Retrieves all scheduled maintenance tasks accessible to the authenticated user, with filtering.
  * @param {object} [params={}] - Query parameters for filtering (e.g., status, recurring, propertyId, unitId, category, search, startDate, endDate, page, limit).
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object>} An object: { tasks, total, currentPage, itemsPerPage }
  */
-export const getAllScheduledMaintenance = async (params = {}) => {
+export const getAllScheduledMaintenance = async (params = {}, signal) => {
     try {
-        const res = await api.get(SCHEDULED_MAINTENANCE_BASE_URL, { params });
+        const res = await api.get(SCHEDULED_MAINTENANCE_BASE_URL, { params, signal });
         if (Array.isArray(res.data)) return { tasks: res.data, total: res.data.length, currentPage: 1, itemsPerPage: res.data.length };
         if (res.data?.tasks && typeof res.data.total !== "undefined") return res.data;
         return { tasks: [], total: 0, currentPage: 1, itemsPerPage: 0 };
@@ -60,11 +61,12 @@ export const getAllScheduledMaintenance = async (params = {}) => {
 /**
  * Retrieves details for a specific scheduled maintenance task.
  * @param {string} id - The ID of the task.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object>} The task object.
  */
-export const getScheduledMaintenanceById = async (id) => {
+export const getScheduledMaintenanceById = async (id, signal) => {
     try {
-        const res = await api.get(`${SCHEDULED_MAINTENANCE_BASE_URL}/${id}`);
+        const res = await api.get(`${SCHEDULED_MAINTENANCE_BASE_URL}/${id}`, { signal });
         return res.data;
     } catch (error) {
         console.error("getScheduledMaintenanceById error:", error.response?.data || error.message);

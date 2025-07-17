@@ -1,42 +1,33 @@
 import React, { useState } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import AdminSidebar from '../components/admin/AdminSidebar';
-import { useAuth } from '../contexts/AuthContext';
+import { Menu } from 'lucide-react';
 
 const AdminLayout = () => {
-  const { user, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600 text-lg">Loading...</div>
-      </div>
-    );
-  }
-
-  const isAdmin = user && user.role && user.role.toLowerCase() === 'admin';
-  if (!isAdmin) return <Navigate to="/login" replace />;
-
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Hamburger for mobile */}
-      <button
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-full bg-[#219377] text-white"
-        onClick={() => setSidebarOpen(true)}
-        aria-label="Open sidebar"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-
-      {/* Sidebar */}
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+      {/* Sidebar Component */}
       <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">       
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200 p-6">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        
+        {/* Header bar for mobile to show a hamburger menu icon */}
+        <div className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-800 shadow-md">
+            <button
+                onClick={() => setSidebarOpen(true)}
+                className="text-gray-500 focus:outline-none"
+                aria-label="Open sidebar"
+            >
+                <Menu size={24} />
+            </button>
+            <span className="text-xl font-semibold text-gray-800 dark:text-white">Admin Panel</span>
+        </div>
+
+        {/* Main content where nested routes will be rendered */}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200 dark:bg-gray-800 p-4 md:p-6">
           <Outlet />
         </main>
       </div>

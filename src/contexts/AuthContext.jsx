@@ -13,21 +13,6 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [authError, setAuthError] = useState(null);
 
-    /**
-     * Centralized function to set the user state and API headers.
-     * This avoids repetition and ensures consistency.
-     */
-    const setupSession = useCallback((backendUser, accessToken) => {
-        // The user object from the backend DTO is the source of truth.
-        setUser(backendUser);
-        localStorage.setItem("user", JSON.stringify(backendUser));
-        localStorage.setItem("token", accessToken);
-        api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-    }, []);
-
-    /**
-     * Centralized function to clear the user session from state and storage.
-     */
     const clearSession = useCallback(() => {
         setUser(null);
         localStorage.removeItem("user");
@@ -36,22 +21,25 @@ export const AuthProvider = ({ children }) => {
         setAuthError(null);
     }, []);
 
-    /**
-     * Handles user logout.
-     */
+    const setupSession = useCallback((backendUser, accessToken) => {
+        setUser(backendUser);
+        localStorage.setItem("user", JSON.stringify(backendUser));
+        localStorage.setItem("token", accessToken);
+        api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+    }, []);
+
     const logout = useCallback(async (isManual = false) => {
-        setLoading(true);
-        await authService.logoutUser(); // Call backend to invalidate session if needed
+        await authService.logoutUser();
         clearSession();
         if (isManual) {
             showSuccess("You have been logged out successfully.");
         }
-        setLoading(false);
     }, [clearSession, showSuccess]);
 
-    /**
-     * Handles user login.
-     */
+    const manualLogout = useCallback(() => {
+        logout(true);
+    }, [logout]);
+
     const login = useCallback(async (email, password) => {
         setLoading(true);
         setAuthError(null);
@@ -60,7 +48,6 @@ export const AuthProvider = ({ children }) => {
             if (responseData?.user && responseData?.accessToken) {
                 setupSession(responseData.user, responseData.accessToken);
                 showSuccess("Login successful!");
-                setLoading(false);
                 return responseData;
             }
             throw new Error("Login failed: Invalid response from server.");
@@ -68,14 +55,12 @@ export const AuthProvider = ({ children }) => {
             const errorMessage = err.response?.data?.message || "An unknown error occurred during login.";
             showError(errorMessage);
             clearSession();
-            setLoading(false);
             throw err;
+        } finally {
+            setLoading(false);
         }
     }, [setupSession, clearSession, showSuccess, showError]);
 
-    /**
-     * Handles new user registration.
-     */
     const register = useCallback(async (userData) => {
         try {
             const registrationData = await authService.registerUser(userData);
@@ -88,9 +73,6 @@ export const AuthProvider = ({ children }) => {
         }
     }, [showError, showSuccess]);
 
-    /**
-     * Effect to check authentication status on initial load.
-     */
     useEffect(() => {
         const checkAuthStatus = async () => {
             const token = localStorage.getItem("token");
@@ -101,10 +83,8 @@ export const AuthProvider = ({ children }) => {
 
             api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
             try {
-                // Use the dedicated 'getMe' service to validate the token and get the user profile.
                 const response = await authService.getMe();
                 if (response?.user) {
-                    // Re-setup session with fresh data from backend, using existing token.
                     setupSession(response.user, token);
                 } else {
                     await logout();
@@ -112,11 +92,9 @@ export const AuthProvider = ({ children }) => {
             } catch (error) {
                 const status = error.response?.status;
                 if (status === 401 || status === 403) {
-                    // Token is invalid or expired.
                     showError("Your session has expired. Please log in again.");
                     await logout();
-                } else {
-                    // Handle other errors (e.g., network failure).
+                } else if (error.code !== 'ERR_CANCELED') {
                     setAuthError("Could not verify session. Please check your connection.");
                 }
             } finally {
@@ -125,28 +103,32 @@ export const AuthProvider = ({ children }) => {
         };
 
         checkAuthStatus();
-    }, [logout, setupSession, showError]); // Dependencies
+        // ✅ **THE FIX IS HERE** ✅
+        // This effect should only run ONCE on mount.
+        // We disable the exhaustive-deps rule because we are intentionally
+        // referencing functions defined outside that should not trigger a re-run.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-    // Memoize the context value for performance.
     const authContextValue = useMemo(() => ({
         user,
-        isAuthenticated: !!user, // isAuthenticated is now a derived boolean.
+        isAuthenticated: !!user,
         loading,
         authError,
         login,
         register,
-        logout: () => logout(true), // manualLogout is now just logout(true)
+        logout: manualLogout,
         hasRole: (roleToCheck) => user?.role?.toLowerCase() === roleToCheck.toLowerCase(),
         hasAnyRole: (rolesArray) => rolesArray.some(role => user?.role?.toLowerCase() === role.toLowerCase()),
         isAdmin: user?.role?.toLowerCase() === USER_ROLES.ADMIN,
         isPropertyManager: user?.role?.toLowerCase() === USER_ROLES.PROPERTY_MANAGER,
         isLandlord: user?.role?.toLowerCase() === USER_ROLES.LANDLORD,
         isTenant: user?.role?.toLowerCase() === USER_ROLES.TENANT,
-    }), [user, loading, authError, login, register, logout]);
+    }), [user, loading, authError, login, register, manualLogout]);
 
     return (
         <AuthContext.Provider value={authContextValue}>
-            {children}
+            {!loading ? children : <div className="flex items-center justify-center h-screen w-full">Loading Application...</div>}
         </AuthContext.Provider>
     );
 };

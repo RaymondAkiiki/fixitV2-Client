@@ -1,64 +1,64 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
-import * as leaseService from "../services/leaseService.js"; // Corrected import path
-import { useAuth } from "./AuthContext.jsx"; // Corrected import path
-import { useProperty } from "./PropertyContext.jsx"; // Corrected import path
+import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from "react";
+import * as leaseService from "../services/leaseService.js";
+import { useAuth } from "./AuthContext.jsx";
+import { useProperty } from "./PropertyContext.jsx";
 
 const LeaseContext = createContext();
 
 export const LeaseProvider = ({ children }) => {
-  const { user, isAuthenticated, loading: authLoading } = useAuth(); // isAuthenticated is now a boolean
-  const { current: currentProperty } = useProperty(); // Get currently selected property
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { current: currentProperty, loading: propertyLoading } = useProperty();
   const [leases, setLeases] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const refreshLeases = useCallback(async () => {
-    // Use isAuthenticated directly as it's a boolean
-    if (!isAuthenticated || authLoading) {
+  const refreshLeases = useCallback(async (signal) => {
+    if (!isAuthenticated) {
       setLeases([]);
+      setLoading(false);
       return;
     }
 
     setLoading(true);
     setError("");
     try {
-      // Fetch leases based on current property or user's properties
       const params = {};
       if (currentProperty) {
         params.propertyId = currentProperty._id;
-      } else if (user?.propertiesOwned?.length > 0) {
-        // If no specific property selected, fetch for all owned properties (or managed)
-        // This logic might need refinement based on how you want to display initial leases
-        // For simplicity, let's assume fetching all for now if no currentProperty
-        // Or, you might default to the first owned/managed property
-      } else if (user?.tenancies?.length > 0) {
-        // If user is a tenant, fetch leases for their tenancies
-        params.tenantId = user._id; // Assuming backend can filter by tenantId
+      } else if (user?.role === 'tenant') {
+        params.tenantId = user._id;
       }
 
-      const res = await leaseService.getLeases(params); // Use getLeases with params
-      setLeases(res.data);
+      const res = await leaseService.getLeases(params, signal);
+      setLeases(res.data || []);
     } catch (err) {
-      console.error("Could not load leases:", err);
-      setError("Could not load leases.");
-      setLeases([]);
+      if (err.name !== 'AbortError' && err.code !== 'ERR_CANCELED') {
+        console.error("Could not load leases:", err);
+        setError("Could not load leases.");
+        setLeases([]);
+      }
     } finally {
       setLoading(false);
     }
-  }, [user, isAuthenticated, authLoading, currentProperty]); // isAuthenticated is already a dependency
+  }, [isAuthenticated, user?._id, user?.role, currentProperty?._id]);
 
-  // Fetch leases when user or currentProperty changes
   useEffect(() => {
-    refreshLeases();
-  }, [refreshLeases]);
+    const controller = new AbortController();
+    if (!authLoading && !propertyLoading) {
+      refreshLeases(controller.signal);
+    }
+    return () => {
+      controller.abort();
+    };
+  }, [authLoading, propertyLoading, refreshLeases]);
 
-  const value = {
+  const value = useMemo(() => ({
     leases,
     loading,
     error,
-    refreshLeases, // Expose refresh function
-    setLeases, // Allow direct manipulation if needed (e.g., after add/update)
-  };
+    refreshLeases,
+    setLeases,
+  }), [leases, loading, error, refreshLeases]);
 
   return (
     <LeaseContext.Provider value={value}>{children}</LeaseContext.Provider>

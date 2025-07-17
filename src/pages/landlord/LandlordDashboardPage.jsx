@@ -16,7 +16,7 @@ import { getRentEntries } from '../../services/rentService.js'; // New: Rent Ser
 import { getAllScheduledMaintenance } from '../../services/scheduledMaintenanceService.js'; // New: Scheduled Maintenance Service
 
 // Component Imports
-import StatCard from '../../components/admin/StatCard.jsx'; // Reusing StatCard
+import StatCard from '../../components/StatCard.jsx'; // Reusing StatCard
 import LoadingSpinner from '../../components/common/LoadingSpinner.jsx'; // Standardized Spinner
 
 // Constants & Helpers
@@ -395,10 +395,10 @@ const LandlordDashboardPage = () => {
                       {formatDate(lease.startDate)} - {formatDate(lease.endDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      <LeaseStatusBadge status={lease.status} />
+                      ${lease.rentAmount?.toFixed(2) || "0.00"} / {lease.rentFrequency || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      ${lease.rentAmount?.toFixed(2) || "0.00"} / {lease.rentFrequency || "N/A"}
+                      <LeaseStatusBadge status={lease.status} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link

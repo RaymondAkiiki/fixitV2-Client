@@ -1,17 +1,18 @@
 // client/src/services/vendorService.js
 
-import api from "../api/axios.js"; // Corrected import path
+import api from "../api/axios.js";
 
 const VENDOR_BASE_URL = '/vendors';
 
 /**
  * Retrieves all vendors accessible by the authenticated user, with filtering.
  * @param {object} [params={}] - Optional query parameters for filtering (e.g., status, serviceTag, propertyId, search, page, limit).
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object[]>} An array of vendor objects.
  */
-export const getAllVendors = async (params = {}) => {
+export const getAllVendors = async (params = {}, signal) => {
     try {
-        const res = await api.get(VENDOR_BASE_URL, { params });
+        const res = await api.get(VENDOR_BASE_URL, { params, signal });
         return res.data;
     } catch (error) {
         console.error("getAllVendors error:", error.response?.data || error.message);
@@ -22,11 +23,12 @@ export const getAllVendors = async (params = {}) => {
 /**
  * Retrieves details for a specific vendor.
  * @param {string} vendorId - The ID of the vendor.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object>} The vendor object.
  */
-export const getVendorById = async (vendorId) => {
+export const getVendorById = async (vendorId, signal) => {
     try {
-        const res = await api.get(`${VENDOR_BASE_URL}/${vendorId}`);
+        const res = await api.get(`${VENDOR_BASE_URL}/${vendorId}`, { signal });
         return res.data;
     } catch (error) {
         console.error("getVendorById error:", error.response?.data || error.message);

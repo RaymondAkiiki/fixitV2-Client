@@ -1,82 +1,92 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
-import * as propertyService from "../services/propertyService.js"; // Corrected import path
-import { useAuth } from "./AuthContext.jsx"; // Corrected import path
-import { useGlobalAlert } from "./GlobalAlertContext.jsx"; // For showing alerts
+import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from "react";
+import * as propertyService from "../services/propertyService.js";
+import { useAuth } from "./AuthContext.jsx";
+import { useGlobalAlert } from "./GlobalAlertContext.jsx";
 
 const PropertyContext = createContext();
 
 export const PropertyProvider = ({ children }) => {
-  const { user, isAuthenticated, loading: authLoading } = useAuth(); // isAuthenticated is now a boolean
+  const { isAuthenticated, authLoading } = useAuth();
   const { showError } = useGlobalAlert();
   const [properties, setProperties] = useState([]);
-  const [current, setCurrent] = useState(null); // The currently selected property
-  const [loading, setLoading] = useState(false);
+  const [current, setCurrent] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const refreshProperties = useCallback(async () => {
-    // Only fetch if authenticated and auth data is loaded
-    // Use isAuthenticated directly as it's a boolean
-    if (!isAuthenticated || authLoading) {
+  // ✅ FIX: `current` has been removed from the dependency array.
+  const refreshProperties = useCallback(async (signal) => {
+    if (!isAuthenticated) {
       setProperties([]);
       setCurrent(null);
+      setLoading(false);
       return;
     }
 
     setLoading(true);
     setError("");
     try {
-      // getAllProperties handles filtering by user's associated properties on the backend
-      const res = await propertyService.getAllProperties(); // Corrected function name
-      setProperties(res); // Assuming res is directly the array of properties
+      const res = await propertyService.getAllProperties({}, signal);
+      const fetchedProperties = Array.isArray(res) ? res : (res.properties || []);
+      setProperties(fetchedProperties);
       
-      // If there are properties and no current property is selected, set the first one as current
-      if (res.length > 0 && !current) {
-        setCurrent(res[0]);
-      } else if (res.length === 0) {
-        setCurrent(null);
-      } else if (current && !res.some(p => p._id === current._id)) {
-        // If current property is no longer in the list (e.g., deleted or access revoked)
-        setCurrent(res[0] || null); // Set to first available or null
-      }
+      // ✅ FIX: Use the functional update form of `setCurrent` to avoid needing `current` as a dependency.
+      // This allows us to access the previous value of `current` without creating a loop.
+      setCurrent(prevCurrent => {
+        if (fetchedProperties.length > 0 && !prevCurrent) {
+          return fetchedProperties[0];
+        }
+        if (fetchedProperties.length === 0) {
+          return null;
+        }
+        if (prevCurrent && !fetchedProperties.some(p => p._id === prevCurrent._id)) {
+          return fetchedProperties[0] || null;
+        }
+        // If the current property still exists, keep it.
+        return prevCurrent;
+      });
 
     } catch (err) {
-      console.error("Could not load properties:", err);
-      setError("Could not load properties.");
-      showError("Failed to load properties. " + (err.message || "Please try again."));
-      setProperties([]);
-      setCurrent(null);
+      // This check correctly ignores intentional cancellations.
+      if (err.name !== 'AbortError' && err.code !== 'ERR_CANCELED') {
+        console.error("Could not load properties:", err);
+        setError("Could not load properties.");
+        showError("Failed to load properties. " + (err.message || "Please try again."));
+        setProperties([]);
+        setCurrent(null);
+      }
     } finally {
       setLoading(false);
     }
-  }, [user, isAuthenticated, authLoading, current, showError]); // isAuthenticated is already a dependency
+  }, [isAuthenticated, showError]); // `current` is removed from here.
 
-  // Fetch properties when user or auth state changes
   useEffect(() => {
-    refreshProperties();
-  }, [refreshProperties]);
+    const controller = new AbortController();
+    if (!authLoading) {
+      refreshProperties(controller.signal);
+    }
+    return () => {
+      controller.abort();
+    };
+  }, [authLoading, isAuthenticated, refreshProperties]);
 
-  // Function to manually select a property
   const selectProperty = useCallback((propertyId) => {
     const prop = properties.find((p) => p._id === propertyId);
     setCurrent(prop || null);
   }, [properties]);
 
-  // Value provided by the context
-  const value = {
+  const value = useMemo(() => ({
     properties,
     current,
     loading,
     error,
-    refreshProperties, // Expose refresh function
+    refreshProperties,
     selectProperty,
-    setCurrent, // Allow direct setting of current property if needed
-    setProperties, // Allow direct manipulation if needed (e.g., after add/update)
-  };
+    setCurrent,
+    setProperties,
+  }), [properties, current, loading, error, refreshProperties, selectProperty]);
 
   return (
-    <PropertyContext.Provider value={value}>
-      {children}
-    </PropertyContext.Provider>
+    <PropertyContext.Provider value={value}>{children}</PropertyContext.Provider>
   );
 };
 

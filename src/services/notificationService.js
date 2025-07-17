@@ -8,14 +8,16 @@ const NOTIFICATION_BASE_URL = '/notifications';
 /**
  * Retrieves all notifications for the authenticated user.
  * @param {object} [params={}] - Query parameters.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object[]>} An array of notification objects.
  */
-export const getAllNotifications = async (params = {}) => {
+export const getAllNotifications = async (params = {}, signal) => {
     try {
-        const res = await api.get(NOTIFICATION_BASE_URL, { params });
+        const res = await api.get(NOTIFICATION_BASE_URL, { params, signal });
         return res.data;
     } catch (error) {
-        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
+        // ✅ FIX: Simply re-throw the original error. Do not create a new one.
+        // The calling context will handle whether to display it.
         throw error;
     }
 };
@@ -23,14 +25,14 @@ export const getAllNotifications = async (params = {}) => {
 /**
  * Retrieves a single notification by ID.
  * @param {string} notificationId
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object>} The notification object.
  */
-export const getNotificationById = async (notificationId) => {
+export const getNotificationById = async (notificationId, signal) => {
     try {
-        const res = await api.get(`${NOTIFICATION_BASE_URL}/${notificationId}`);
+        const res = await api.get(`${NOTIFICATION_BASE_URL}/${notificationId}`, { signal });
         return res.data;
     } catch (error) {
-        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
         throw error;
     }
 };
@@ -45,7 +47,6 @@ export const markNotificationAsRead = async (notificationId) => {
         const res = await api.patch(`${NOTIFICATION_BASE_URL}/${notificationId}/read`);
         return res.data;
     } catch (error) {
-        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
         throw error;
     }
 };
@@ -59,7 +60,6 @@ export const markAllNotificationsAsRead = async () => {
         const res = await api.patch(`${NOTIFICATION_BASE_URL}/mark-all-read`);
         return res.data;
     } catch (error) {
-        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
         throw error;
     }
 };
@@ -73,7 +73,6 @@ export const getUnreadNotificationCount = async () => {
         const res = await api.get(`${NOTIFICATION_BASE_URL}/unread-count`);
         return res.data.count;
     } catch (error) {
-        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
         throw error;
     }
 };
@@ -88,7 +87,6 @@ export const deleteNotification = async (notificationId) => {
         const res = await api.delete(`${NOTIFICATION_BASE_URL}/${notificationId}`);
         return res.data;
     } catch (error) {
-        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
         throw error;
     }
 };

@@ -1,44 +1,55 @@
 // client/src/services/propertyService.js
 
-import api from "../api/axios.js"; // Corrected import path
+import api from "../api/axios.js";
+import axios from "axios"; // Import axios to check for cancel errors
 
 const PROPERTY_BASE_URL = '/properties';
 
 /**
  * Retrieves a list of properties accessible by the authenticated user.
- * @param {object} [params={}] - Optional query parameters for filtering (e.g., { search, city, country, isActive, propertyType, sortBy, sortOrder, page, limit }).
+ * @param {object} [params={}] - Optional query parameters for filtering.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object[]>} An array of property objects.
  */
-export const getAllProperties = async (params = {}) => {
+export const getAllProperties = async (params = {}, signal) => {
     try {
-        const res = await api.get(PROPERTY_BASE_URL, { params });
+        const res = await api.get(PROPERTY_BASE_URL, { params, signal });
         if (Array.isArray(res.data)) return res.data;
         if (Array.isArray(res.data.properties)) return res.data.properties; // Handle paginated response
         return [];
     } catch (error) {
-        console.error("getAllProperties error:", error.response?.data || error.message);
-        throw error.response?.data?.message || error.message;
+        // ✅ FIX: Check for cancellation errors first. If it's not a cancel error,
+        // then log it. In either case, re-throw the original error object
+        // so the calling component can inspect its 'name' or 'code'.
+        if (!axios.isCancel(error)) {
+            console.error("getAllProperties error:", error.response?.data || error.message);
+        }
+        throw error; // Re-throw the original error
     }
 };
 
 /**
  * Retrieves details for a specific property.
  * @param {string} propertyId - The ID of the property.
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
  * @returns {Promise<object>} The property object.
  */
-export const getPropertyById = async (propertyId) => {
+export const getPropertyById = async (propertyId, signal) => {
     try {
-        const res = await api.get(`${PROPERTY_BASE_URL}/${propertyId}`);
+        const res = await api.get(`${PROPERTY_BASE_URL}/${propertyId}`, { signal });
         return res.data;
     } catch (error) {
-        console.error("getPropertyById error:", error.response?.data || error.message);
-        throw error.response?.data?.message || error.message;
+        if (!axios.isCancel(error)) {
+            console.error("getPropertyById error:", error.response?.data || error.message);
+        }
+        throw error;
     }
 };
 
+
 /**
  * Creates a new property.
- * @param {object} propertyData - Data for the new property: { name, address: { street, city, state, country }, propertyType, yearBuilt, numberOfUnits, details, annualOperatingBudget, notes, mainContactUser, isActive }.
+ * @param {object} propertyData - Data for the new property.
  * @returns {Promise<object>} The created property object.
  */
 export const createProperty = async (propertyData) => {
