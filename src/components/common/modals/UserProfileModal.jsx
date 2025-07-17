@@ -5,7 +5,6 @@ import Button from '../Button.jsx'; // Ensure correct path
 import LoadingSpinner from '../LoadingSpinner.jsx'; // Ensure correct path
 import { User, Mail, Phone, Building, Home, Briefcase } from 'lucide-react'; // Icons for user details
 import { getUserById } from '../../services/userService.js'; // Service to fetch user details
-import { getPropertyById } from '../../services/propertyService.js'; // Service to fetch property details
 
 // Branding colors
 const PRIMARY_COLOR = "#219377";
