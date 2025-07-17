@@ -116,3 +116,18 @@ export const verifyEmail = async (token) => {
         throw error;
     }
 };
+
+/**
+ * Changes the current user's password.
+ * @param {string} currentPassword - The user's current password.
+ * @param {string} newPassword - The new password.
+ * @returns {Promise<object>} The response data from the API.
+ */
+export const changePassword = async (currentPassword, newPassword) => {
+    try {
+        const res = await api.put("/auth/change-password", { currentPassword, newPassword });
+        return res.data;
+    } catch (error) {
+        throw error;
+    }
+};
