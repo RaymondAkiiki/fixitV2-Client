@@ -18,7 +18,7 @@ export const fileListToArray = (fileList) => {
  * This is useful for sending files to a backend API that expects FormData.
  * @param {FormData} formData - The FormData object to append files to.
  * @param {File[]} files - An array of File objects.
- * @param {string} fieldName - The name of the field under which files will be sent (e.g., 'mediaFiles', 'images').
+ * @param {string} fieldName - The name of the field under which files will be sent (e.g., 'mediaFiles', 'images', 'files').
  */
 export const appendFilesToFormData = (formData, files, fieldName = 'files') => {
     if (!formData || !files || files.length === 0) {
@@ -32,7 +32,7 @@ export const appendFilesToFormData = (formData, files, fieldName = 'files') => {
 /**
  * Validates selected files based on type and size.
  * @param {File[]} files - An array of File objects to validate.
- * @param {string[]} allowedTypes - Array of allowed MIME type prefixes (e.g., ['image/', 'video/']).
+ * @param {string[]} allowedTypes - Array of allowed MIME type prefixes (e.g., ['image/', 'video/', 'application/pdf']).
  * @param {number} maxSizeMB - Maximum allowed file size in megabytes.
  * @returns {{ isValid: boolean, message: string }} Validation result.
  */
@@ -49,7 +49,7 @@ export const validateFiles = (files, allowedTypes, maxSizeMB) => {
         if (!isAllowedType) {
             return {
                 isValid: false,
-                message: `File type not allowed: ${file.name}. Only ${allowedTypes.map(t => t.slice(0, -1)).join(', ')} files are permitted.`,
+                message: `File type not allowed: ${file.name}. Only ${allowedTypes.map(t => t.split('/')[0]).join(', ')} files are permitted.`,
             };
         }
 
@@ -67,11 +67,11 @@ export const validateFiles = (files, allowedTypes, maxSizeMB) => {
 
 /**
  * Previews selected image files using FileReader.
- * @param {FileList} fileList - The FileList object from a file input.
+ * @param {FileList|File[]} filesInput - The FileList object or an array of File objects.
  * @returns {Promise<string[]>} A promise that resolves to an array of data URLs.
  */
-export const previewImageFiles = async (fileList) => {
-    const files = fileListToArray(fileList);
+export const previewImageFiles = async (filesInput) => {
+    const files = filesInput instanceof FileList ? fileListToArray(filesInput) : filesInput;
     const imageUrls = [];
 
     for (const file of files) {

@@ -79,14 +79,15 @@ export const truncateString = (str, maxLength) => {
 
 /**
  * Generates a full invitation link for a public acceptance page.
+ * This link should point to your frontend's public invite acceptance route.
  * @param {string} token - The unique invitation token.
  * @returns {string} The complete invitation URL.
  */
 export const generateInviteLink = (token) => {
     // Ensure VITE_FRONTEND_URL is correctly set in your .env file
-    // This URL must match the frontend route configured for invite acceptance.
+    // This URL must match the frontend route configured for invite acceptance (e.g., /invite/:token).
     const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-    return `${frontendUrl}/auth/accept-invite/${token}`; // Align with frontend route structure
+    return `${frontendUrl}/invite/${token}`; // Align with frontend route structure from ROUTES.ACCEPT_INVITE
 };
 
 /**
@@ -107,3 +108,31 @@ export const isVideo = (mimeType) => {
     return mimeType && mimeType.startsWith('video/');
 };
 
+/**
+ * Determines if a file is a PDF based on its MIME type.
+ * @param {string} mimeType - The MIME type of the file.
+ * @returns {boolean} True if the file is a PDF, false otherwise.
+ */
+export const isPdf = (mimeType) => {
+    return mimeType && mimeType === 'application/pdf';
+};
+
+/**
+ * Converts an object of query parameters into a URL-encoded string.
+ * @param {object} params - The object containing query parameters.
+ * @returns {string} The URL-encoded query string (e.g., "key1=value1&key2=value2").
+ */
+export const buildQueryParams = (params) => {
+    if (!params) return '';
+    const queryString = Object.keys(params)
+        .filter(key => params[key] !== undefined && params[key] !== null && params[key] !== '')
+        .map(key => {
+            const value = params[key];
+            if (Array.isArray(value)) {
+                return value.map(item => `${encodeURIComponent(key)}=${encodeURIComponent(item)}`).join('&');
+            }
+            return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+        })
+        .join('&');
+    return queryString ? `?${queryString}` : '';
+};

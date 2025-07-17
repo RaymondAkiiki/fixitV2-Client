@@ -1,56 +1,94 @@
-// frontend/src/services/notificationService.js
+// client/src/services/notificationService.js
 
-import api from "../api/axios.js"; // Corrected import path
+import api from "../api/axios.js";
+import axios from "axios";
+
+const NOTIFICATION_BASE_URL = '/notifications';
 
 /**
  * Retrieves all notifications for the authenticated user.
+ * @param {object} [params={}] - Query parameters.
  * @returns {Promise<object[]>} An array of notification objects.
  */
-export const getAllNotifications = async () => {
+export const getAllNotifications = async (params = {}) => {
     try {
-        const res = await api.get("/notifications");
+        const res = await api.get(NOTIFICATION_BASE_URL, { params });
         return res.data;
     } catch (error) {
-        console.error("getAllNotifications error:", error.response?.data || error.message);
+        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
+        throw error;
+    }
+};
+
+/**
+ * Retrieves a single notification by ID.
+ * @param {string} notificationId
+ * @returns {Promise<object>} The notification object.
+ */
+export const getNotificationById = async (notificationId) => {
+    try {
+        const res = await api.get(`${NOTIFICATION_BASE_URL}/${notificationId}`);
+        return res.data;
+    } catch (error) {
+        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
         throw error;
     }
 };
 
 /**
  * Marks a specific notification as read.
- * @param {string} notificationId - The ID of the notification to mark as read.
+ * @param {string} notificationId
  * @returns {Promise<object>} The updated notification object or success message.
  */
-export const markAsRead = async (notificationId) => {
+export const markNotificationAsRead = async (notificationId) => {
     try {
-        // Changed to PUT /notifications/:id/read as per backend route
-        const res = await api.put(`/notifications/${notificationId}/read`);
+        const res = await api.patch(`${NOTIFICATION_BASE_URL}/${notificationId}/read`);
         return res.data;
     } catch (error) {
-        console.error("markAsRead error:", error.response?.data || error.message);
+        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
         throw error;
     }
 };
 
 /**
- * Marks all notifications for the authenticated user as read.
+ * Marks all notifications as read.
  * @returns {Promise<object>} Success message.
  */
-export const markAllAsRead = async () => {
+export const markAllNotificationsAsRead = async () => {
     try {
-        const res = await api.put('/notifications/read-all'); // New route
+        const res = await api.patch(`${NOTIFICATION_BASE_URL}/mark-all-read`);
         return res.data;
     } catch (error) {
-        console.error("markAllAsRead error:", error.response?.data || error.message);
+        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
         throw error;
     }
 };
 
-// Removed deleteNotification as it was not explicitly in the backend notificationController.
-// If needed, it would require a DELETE /notifications/:id endpoint and corresponding controller logic.
-/*
-export const deleteNotification = async (notificationId) => {
-    const res = await api.delete(`/notifications/${notificationId}`);
-    return res.data;
+/**
+ * Retrieves the count of unread notifications for the authenticated user.
+ * @returns {Promise<number>} The count of unread notifications.
+ */
+export const getUnreadNotificationCount = async () => {
+    try {
+        const res = await api.get(`${NOTIFICATION_BASE_URL}/unread-count`);
+        return res.data.count;
+    } catch (error) {
+        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
+        throw error;
+    }
 };
-*/
+
+/**
+ * Deletes a specific notification.
+ * @param {string} notificationId
+ * @returns {Promise<object>} Success message.
+ */
+export const deleteNotification = async (notificationId) => {
+    try {
+        const res = await api.delete(`${NOTIFICATION_BASE_URL}/${notificationId}`);
+        return res.data;
+    } catch (error) {
+        if (axios.isCancel && axios.isCancel(error)) throw new Error("Request Aborted");
+        throw error;
+    }
+};

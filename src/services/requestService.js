@@ -1,19 +1,21 @@
-// frontend/src/services/requestService.js
+// client/src/services/requestService.js
 
 import api from "../api/axios.js"; // Corrected import path
 
+const REQUEST_BASE_URL = '/requests';
+
 /**
  * Retrieves all maintenance requests accessible to the authenticated user, with filtering.
- * @param {object} [params={}] - Query parameters for filtering (e.g., status, category, propertyId, unitId, search).
+ * @param {object} [params={}] - Query parameters for filtering (e.g., status, category, priority, propertyId, unitId, search, startDate, endDate, assignedToId, assignedToType, page, limit).
  * @returns {Promise<object[]>} An array of request objects.
  */
 export const getAllRequests = async (params = {}) => {
     try {
-        const res = await api.get("/requests", { params }); // This now handles all filtering
+        const res = await api.get(REQUEST_BASE_URL, { params }); // This now handles all filtering
         return res.data;
     } catch (error) {
         console.error("getAllRequests error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -24,21 +26,21 @@ export const getAllRequests = async (params = {}) => {
  */
 export const getRequestById = async (id) => {
     try {
-        const res = await api.get(`/requests/${id}`);
+        const res = await api.get(`${REQUEST_BASE_URL}/${id}`);
         return res.data;
     } catch (error) {
         console.error("getRequestById error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
 /**
  * Creates a new maintenance request.
  * @param {object} requestData - Request details: { title, description, category, priority, propertyId, unitId }.
- * @param {File[]} [mediaFiles=[]] - Optional array of File objects for media upload.
+ * @param {File[]} [files=[]] - Optional array of File objects for media upload. (Backend expects 'files')
  * @returns {Promise<object>} The created request object.
  */
-export const createRequest = async (requestData, mediaFiles = []) => {
+export const createRequest = async (requestData, files = []) => {
     try {
         const formData = new FormData();
         // Append all text fields
@@ -53,16 +55,16 @@ export const createRequest = async (requestData, mediaFiles = []) => {
             }
         });
         // Append media files
-        mediaFiles.forEach(file => {
-            formData.append('mediaFiles', file); // 'mediaFiles' must match multer field name
+        files.forEach(file => {
+            formData.append('files', file); // Corrected to 'files' to match backend multer field name
         });
 
         // Axios automatically sets Content-Type to multipart/form-data for FormData
-        const res = await api.post("/requests", formData);
+        const res = await api.post(REQUEST_BASE_URL, formData);
         return res.data;
     } catch (error) {
         console.error("createRequest error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -80,11 +82,11 @@ export const updateRequest = async (id, updates) => {
         if (payload.priority) payload.priority = payload.priority.toLowerCase();
         if (payload.status) payload.status = payload.status.toLowerCase();
 
-        const res = await api.put(`/requests/${id}`, payload);
+        const res = await api.put(`${REQUEST_BASE_URL}/${id}`, payload);
         return res.data;
     } catch (error) {
         console.error("updateRequest error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -96,31 +98,32 @@ export const updateRequest = async (id, updates) => {
  */
 export const assignRequest = async (id, assignmentData) => {
     try {
-        const res = await api.post(`/requests/${id}/assign`, assignmentData); // Changed to POST /:id/assign
+        // Backend uses POST /api/requests/:id/assign
+        const res = await api.post(`${REQUEST_BASE_URL}/${id}/assign`, assignmentData);
         return res.data;
     } catch (error) {
         console.error("assignRequest error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
 /**
  * Uploads additional media files to an existing request.
  * @param {string} id - The ID of the request.
- * @param {File[]} mediaFiles - Array of File objects to upload.
+ * @param {File[]} mediaFiles - Array of File objects to upload. (Backend expects 'mediaFiles')
  * @returns {Promise<object>} Updated request with new media URLs.
  */
 export const uploadRequestMedia = async (id, mediaFiles) => {
     try {
         const formData = new FormData();
         mediaFiles.forEach(file => {
-            formData.append('mediaFiles', file); // 'mediaFiles' must match multer field name
+            formData.append('mediaFiles', file); // 'mediaFiles' matches multer field name
         });
-        const res = await api.post(`/requests/${id}/media`, formData);
+        const res = await api.post(`${REQUEST_BASE_URL}/${id}/media`, formData);
         return res.data;
     } catch (error) {
         console.error("uploadRequestMedia error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -132,11 +135,11 @@ export const uploadRequestMedia = async (id, mediaFiles) => {
  */
 export const deleteRequestMedia = async (id, mediaUrl) => {
     try {
-        const res = await api.delete(`/requests/${id}/media`, { data: { mediaUrl } }); // DELETE with body
+        const res = await api.delete(`${REQUEST_BASE_URL}/${id}/media`, { data: { mediaUrl } }); // DELETE with body
         return res.data;
     } catch (error) {
         console.error("deleteRequestMedia error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -148,11 +151,11 @@ export const deleteRequestMedia = async (id, mediaUrl) => {
  */
 export const enableRequestPublicLink = async (id, expiresInDays) => {
     try {
-        const res = await api.post(`/requests/${id}/enable-public-link`, { expiresInDays });
+        const res = await api.post(`${REQUEST_BASE_URL}/${id}/enable-public-link`, { expiresInDays });
         return res.data;
     } catch (error) {
         console.error("enableRequestPublicLink error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -163,46 +166,11 @@ export const enableRequestPublicLink = async (id, expiresInDays) => {
  */
 export const disableRequestPublicLink = async (id) => {
     try {
-        const res = await api.post(`/requests/${id}/disable-public-link`);
+        const res = await api.post(`${REQUEST_BASE_URL}/${id}/disable-public-link`);
         return res.data;
     } catch (error) {
         console.error("disableRequestPublicLink error:", error.response?.data || error.message);
-        throw error;
-    }
-};
-
-/**
- * Retrieves a public view of a request (no authentication required).
- * @param {string} publicToken - The public access token.
- * @returns {Promise<object>} Limited request details.
- */
-export const getPublicRequestView = async (publicToken) => {
-    try {
-        const res = await api.get(`/requests/public/${publicToken}`);
-        return res.data;
-    } catch (error) {
-        console.error("getPublicRequestView error:", error.response?.data || error.message);
-        throw error;
-    }
-};
-
-/**
- * Allows an external vendor to update a request (status/comments) via public link.
- * @param {string} publicToken - The public access token.
- * @param {object} updateData - Data to update: { status, commentMessage, name, phone }.
- * @returns {Promise<object>} Success message.
- */
-export const publicRequestUpdate = async (publicToken, updateData) => {
-    try {
-        // Ensure status is lowercase if provided
-        const payload = { ...updateData };
-        if (payload.status) payload.status = payload.status.toLowerCase();
-
-        const res = await api.post(`/requests/public/${publicToken}/update`, payload);
-        return res.data;
-    } catch (error) {
-        console.error("publicRequestUpdate error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -213,11 +181,11 @@ export const publicRequestUpdate = async (publicToken, updateData) => {
  */
 export const verifyRequest = async (id) => {
     try {
-        const res = await api.put(`/requests/${id}/verify`);
+        const res = await api.put(`${REQUEST_BASE_URL}/${id}/verify`);
         return res.data;
     } catch (error) {
         console.error("verifyRequest error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -228,11 +196,11 @@ export const verifyRequest = async (id) => {
  */
 export const reopenRequest = async (id) => {
     try {
-        const res = await api.put(`/requests/${id}/reopen`);
+        const res = await api.put(`${REQUEST_BASE_URL}/${id}/reopen`);
         return res.data;
     } catch (error) {
         console.error("reopenRequest error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -243,11 +211,11 @@ export const reopenRequest = async (id) => {
  */
 export const archiveRequest = async (id) => {
     try {
-        const res = await api.put(`/requests/${id}/archive`);
+        const res = await api.put(`${REQUEST_BASE_URL}/${id}/archive`);
         return res.data;
     } catch (error) {
         console.error("archiveRequest error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -259,15 +227,10 @@ export const archiveRequest = async (id) => {
  */
 export const submitFeedback = async (id, feedbackData) => {
     try {
-        const res = await api.post(`/requests/${id}/feedback`, feedbackData);
+        const res = await api.post(`${REQUEST_BASE_URL}/${id}/feedback`, feedbackData);
         return res.data;
     } catch (error) {
         console.error("submitFeedback error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
-
-
-// Removed: markAsResolved, deleteRequest (now handled by updateRequest with status/archive),
-// getMyRequests (now consolidated into getAllRequests with filtering),
-// addCommentToRequest (use commentsService.addComment), updateRequestStatus (use updateRequest).

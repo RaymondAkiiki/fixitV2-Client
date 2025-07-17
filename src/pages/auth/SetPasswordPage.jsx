@@ -1,80 +1,72 @@
+// frontend/src/pages/auth/SetPasswordPage.jsx
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { resetPassword } from '../../services/authService';
-import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
-import Alert from '../../components/common/Alert';
-import { Lock, CheckCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { resetPassword } from '../../services/authService.js'; // Ensure .js extension
+import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx'; // Import useGlobalAlert
+import useForm from '../../hooks/useForm.js'; // Import useForm hook
+import Input from '../../components/common/Input.jsx'; // Ensure .jsx extension
+import Button from '../../components/common/Button.jsx'; // Ensure .jsx extension
+import { Lock, CheckCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react'; // Icons
+import { ROUTES } from '../../utils/constants.js'; // Import ROUTES
+
+/**
+ * Client-side validation function for the set password form.
+ * @param {object} values - The current form values { password, confirmPassword }.
+ * @returns {object} An object containing validation errors, if any.
+ */
+const validateSetPasswordForm = (values) => {
+  const errors = {};
+
+  if (!values.password.trim()) {
+    errors.password = 'New password is required.';
+  } else if (values.password.length < 8) {
+    errors.password = 'Password must be at least 8 characters long.';
+  }
+
+  if (!values.confirmPassword.trim()) {
+    errors.confirmPassword = 'Please confirm your new password.';
+  } else if (values.password !== values.confirmPassword) {
+    errors.confirmPassword = 'Passwords do not match.';
+  }
+
+  return errors;
+};
 
 const SetPasswordPage = () => {
   const { token } = useParams(); // Get reset token from URL
   const navigate = useNavigate();
+  const { showSuccess, showError } = useGlobalAlert(); // Destructure from useGlobalAlert
 
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [confirmPasswordError, setConfirmPasswordError] = useState('');
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState('info');
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Only show error if the user tries to submit without a token
-  const validatePasswords = () => {
-    let isValid = true;
-    setPasswordError('');
-    setConfirmPasswordError('');
+  // Initialize useForm hook
+  const {
+    values,
+    errors,
+    handleChange,
+    handleSubmit,
+    isSubmitting,
+  } = useForm(
+    { password: '', confirmPassword: '' },
+    validateSetPasswordForm,
+    async (formValues) => { // This is the onSubmitCallback for useForm
+      if (!token) {
+        showError('Password reset token is missing or invalid. Please use the link from your email.');
+        return; // Prevent API call if token is missing
+      }
 
-    if (!password.trim()) {
-      setPasswordError('New password is required.');
-      isValid = false;
-    } else if (password.length < 8) {
-      setPasswordError('Password must be at least 8 characters.');
-      isValid = false;
+      try {
+        await resetPassword(token, formValues.password);
+        showSuccess('Password reset successfully! Redirecting to login...');
+        setTimeout(() => navigate(ROUTES.LOGIN, { replace: true }), 2000);
+      } catch (err) {
+        console.error("Reset password error in SetPasswordPage:", err);
+        showError(err.response?.data?.message || 'Failed to reset password. The link may be expired or invalid.');
+      }
     }
-
-    if (!confirmPassword.trim()) {
-      setConfirmPasswordError('Please confirm your new password.');
-      isValid = false;
-    } else if (password !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match.');
-      isValid = false;
-    }
-
-    return isValid;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setMessageType('info');
-    if (!token) {
-      setMessageType('error');
-      setMessage('Password reset token is missing or invalid. Please use the link from your email.');
-      return;
-    }
-    if (!validatePasswords()) {
-      setMessage('Please correct the password errors.');
-      setMessageType('error');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await resetPassword(token, password);
-      setMessageType('success');
-      setMessage('Password reset successfully! Redirecting to login...');
-      setTimeout(() => navigate('/login', { replace: true }), 2000);
-    } catch (err) {
-      setMessageType('error');
-      const apiMsg = err.response?.data?.message || 'Failed to reset password. The link may be expired or invalid.';
-      setMessage(apiMsg);
-      console.error("Reset password error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  );
 
   return (
     <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-xl border border-gray-100 text-center mx-auto">
@@ -82,14 +74,7 @@ const SetPasswordPage = () => {
       <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Set Your New Password</h2>
       <p className="text-gray-600 mb-6">Enter and confirm your new strong password for FixIt.</p>
 
-      {message && (
-        <Alert
-          type={messageType}
-          message={message}
-          onClose={() => setMessage('')}
-          className="mb-4"
-        />
-      )}
+      {/* Message display is now handled by GlobalAlertContext, so no local Alert component needed here */}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="relative">
@@ -98,14 +83,14 @@ const SetPasswordPage = () => {
             id="password"
             name="password"
             type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
+            value={values.password}
+            onChange={handleChange}
             placeholder="Minimum 8 characters"
             required
-            error={passwordError}
-            disabled={loading}
+            error={errors.password} // Pass specific error for password input
+            disabled={isSubmitting}
             minLength={8}
-            className="pr-10"
+            className="pr-10" // Add padding for the toggle button
           />
           <button
             type="button"
@@ -124,12 +109,12 @@ const SetPasswordPage = () => {
             id="confirmPassword"
             name="confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
-            value={confirmPassword}
-            onChange={(e) => { setConfirmPassword(e.target.value); setConfirmPasswordError(''); }}
+            value={values.confirmPassword}
+            onChange={handleChange}
             placeholder="Re-enter new password"
             required
-            error={confirmPasswordError}
-            disabled={loading}
+            error={errors.confirmPassword} // Pass specific error for confirm password input
+            disabled={isSubmitting}
             className="pr-10"
           />
           <button
@@ -147,15 +132,15 @@ const SetPasswordPage = () => {
           type="submit"
           variant="primary"
           className="w-full py-3"
-          loading={loading}
-          disabled={loading}
+          loading={isSubmitting}
+          disabled={isSubmitting}
         >
-          <CheckCircle className="w-5 h-5 mr-2" /> Reset Password
+          <CheckCircle className="w-5 h-5 mr-2" /> {isSubmitting ? "Resetting..." : "Reset Password"}
         </Button>
       </form>
 
       <div className="mt-6">
-        <Link to="/login" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 hover:underline font-medium transition-colors">
+        <Link to={ROUTES.LOGIN} className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 hover:underline font-medium transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
         </Link>
       </div>

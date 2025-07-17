@@ -1,9 +1,9 @@
-﻿// Shared Imports
+// Shared Imports
 import { Link } from "react-router-dom";
 import { CheckCircle, HelpCircle, DollarSign, Settings } from "lucide-react";
 
 // Features Page
-export const FeaturesPage = () => {
+const FeaturesPage = () => {
   return (
     <div className="min-h-screen bg-white py-16 px-4 text-gray-900">
       <h1 className="text-4xl font-bold text-center mb-12">What Makes Us Different</h1>
@@ -53,3 +53,4 @@ export const FeaturesPage = () => {
     </div>
   );
 };
+export default FeaturesPage;

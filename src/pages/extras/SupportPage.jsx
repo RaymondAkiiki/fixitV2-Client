@@ -1,9 +1,9 @@
-﻿// Shared Imports
+// Shared Imports
 import { Link } from "react-router-dom";
 import { CheckCircle, HelpCircle, DollarSign, Settings } from "lucide-react";
 
 // Support Page
-export const SupportPage = () => {
+const SupportPage = () => {
   return (
     <div className="min-h-screen bg-white py-16 px-4 text-gray-900 max-w-3xl mx-auto">
       <h1 className="text-4xl font-bold text-center mb-6">Need Help?</h1>
@@ -36,3 +36,5 @@ export const SupportPage = () => {
     </div>
   );
 };
+
+export default SupportPage;

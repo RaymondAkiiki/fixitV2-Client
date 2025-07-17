@@ -1,25 +1,22 @@
+// frontend/src/pages/auth/WelcomePage.jsx
+
 import React from "react";
 import { Link } from "react-router-dom";
+import { ROUTES, APP_NAME } from "../../utils/constants.js"; // Import ROUTES and APP_NAME
 
-// Updated and unified app names/descriptions/links as used in "ComingSoon"
-const apps = [
-  {
-    name: "Lease and Tenant Manager",
-    desc: "Stay on top of leases, payments, and tenant onboarding with ease.",
-    link: "/coming-soon",
-    accent: "from-[#E3EDFB] to-[#ffbd59]/40", // blue to yellow accent
-  },
+// Unified app names/descriptions/links for other Threalty products
+const otherThrealtyApps = [
   {
     name: "Real Estate Genie",
     desc: "Draft real estate documents faster with AI-powered templates.",
-    link: "/coming-soon",
-    accent: "from-[#E6F8F3] to-[#ffbd59]/40", // teal to yellow accent
+    link: ROUTES.COMING_SOON, // Use constant for link
+    icon: "📄", // Explicit icon for clarity
   },
   {
     name: "Real Estate AI Chatbot",
     desc: "Get instant answers and property matches 24/7 with our smart assistant.",
-    link: "/coming-soon",
-    accent: "from-[#EDEBFA] to-[#ffbd59]/40", // purple to yellow accent
+    link: ROUTES.COMING_SOON, // Use constant for link
+    icon: "🤖", // Explicit icon for clarity
   },
 ];
 
@@ -27,26 +24,26 @@ const WelcomePage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-white text-gray-800">
       {/* Hero Section */}
-      <section className="flex flex-col items-center justify-center min-h-[80vh] bg-gradient-to-br from-[#e4faf3] via-white to-[#fff7ea] text-center px-4 relative overflow-hidden">
+      <section className="relative flex flex-col items-center justify-center min-h-[80vh] bg-gradient-to-br from-[#e4faf3] via-white to-[#fff7ea] text-center px-4 overflow-hidden">
+        {/* Decorative animated shapes */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none select-none">
-          {/* Decorative animated shapes */}
           <div className="absolute left-10 top-12 w-24 h-24 bg-[#219377]/10 rounded-full blur-2xl animate-pulse" />
           <div className="absolute right-10 bottom-16 w-32 h-32 bg-[#ffbd59]/20 rounded-full blur-2xl animate-pulse-slow" />
         </div>
         <div className="relative z-10 max-w-2xl">
           <h1 className="text-5xl md:text-6xl font-extrabold text-[#219377] mb-4 drop-shadow-lg animate-fade-in">
-            Welcome to <span className="text-[#ffbd59]">Fixit</span>
+            Welcome to <span className="text-[#ffbd59]">{APP_NAME.split(' ')[0]}</span>
           </h1>
           <p className="text-xl md:text-2xl font-medium text-gray-700 mb-8 animate-fade-in delay-150">
-            The smartest way to handle property maintenance
+            The smartest way to handle property maintenance, leases, and tenants.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10 animate-fade-in delay-200">
-            <Link to="/register">
+            <Link to={ROUTES.REGISTER}>
               <button className="bg-[#ffbd59] text-white text-lg font-bold px-8 py-3 rounded-xl shadow-md hover:bg-[#e0a84e] transition">
                 Get Started Free
               </button>
             </Link>
-            <Link to="/login">
+            <Link to={ROUTES.LOGIN}>
               <button className="bg-white text-[#219377] border-2 border-[#219377] text-lg font-bold px-8 py-3 rounded-xl shadow-md hover:bg-[#219377] hover:text-white transition">
                 Login
               </button>
@@ -115,22 +112,22 @@ const WelcomePage = () => {
       </section>
 
       {/* Callout Section */}
-      <section className="py-16 px-6 md:px-20 bg-gradient-to-r from-[#219377]/10 via-white to-[#ffbd59]/10 text-center relative">
+      <section className="relative py-16 px-6 md:px-20 bg-gradient-to-r from-[#219377]/10 via-white to-[#ffbd59]/10 text-center">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-extrabold text-[#ffbd59] mb-4 animate-fade-in">Why Fixit?</h2>
           <p className="text-lg md:text-xl text-gray-700 mb-6 animate-fade-in delay-100">
-            <span className="font-semibold text-[#219377]">Time saved, tenants happy, and properties in top shape.</span> 
+            <span className="font-semibold text-[#219377]">Time saved, tenants happy, and properties in top shape.</span>
             <br />With Fixit, you automate tedious tasks and unlock peace of mind.
           </p>
-          <div className="flex flex-col md:flex-row gap-6 justify-center mt-10 text-left">
-            <div className="flex-1 bg-white rounded-xl p-6 shadow-md border-l-4 border-[#219377] animate-fade-in delay-200">
+          <div className="mt-10 flex flex-col md:flex-row gap-6 justify-center text-left">
+            <div className="flex-1 rounded-xl border-l-4 border-[#219377] bg-white p-6 shadow-md animate-fade-in delay-200">
               <div className="text-3xl mb-2">💡</div>
-              <div className="font-bold text-lg text-[#219377] mb-1">AI Powered Suggestions</div>
+              <div className="mb-1 text-lg font-bold text-[#219377]">AI Powered Suggestions</div>
               <div className="text-gray-600">Let our system recommend the best vendors and solutions for every maintenance request.</div>
             </div>
-            <div className="flex-1 bg-white rounded-xl p-6 shadow-md border-l-4 border-[#ffbd59] animate-fade-in delay-250">
+            <div className="flex-1 rounded-xl border-l-4 border-[#ffbd59] bg-white p-6 shadow-md animate-fade-in delay-250">
               <div className="text-3xl mb-2">⚡</div>
-              <div className="font-bold text-lg text-[#ffbd59] mb-1">Lightning Fast Communication</div>
+              <div className="mb-1 text-lg font-bold text-[#ffbd59]">Lightning Fast Communication</div>
               <div className="text-gray-600">Keep everyone in the loop with real-time updates and messaging.</div>
             </div>
           </div>
@@ -143,29 +140,24 @@ const WelcomePage = () => {
         <p className="text-gray-700 mb-10 animate-fade-in delay-100">
           Explore our growing suite of AI-powered real estate tools.
         </p>
-        <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
-          {apps.map((app, i) => (
+        <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-2"> {/* Changed to md:grid-cols-2 as there are now only 2 apps */}
+          {otherThrealtyApps.map((app, i) => (
             <Link
               to={app.link}
               key={app.name}
               className={`
-                p-6 bg-gray-50 rounded-xl shadow hover:shadow-lg
-                transition transform hover:scale-105
-                text-left
-                animate-fade-in delay-100
-                flex flex-col items-start
+                flex flex-col items-start p-6 bg-gray-50 rounded-xl shadow hover:shadow-lg
+                transition transform hover:scale-105 animate-fade-in
               `}
               style={{
+                animationDelay: `${0.1 * i}s`, // Dynamic delay for animation
                 minHeight: "190px",
               }}
             >
-              <div className="text-4xl mb-3">
-                {app.icon || (
-                  // fallback icon based on position if not provided in apps array
-                  i === 0 ? "🏠" : i === 1 ? "📄" : "📊"
-                )}
+              <div className="mb-3 text-4xl">
+                {app.icon}
               </div>
-              <h3 className="font-bold text-xl mb-2 text-[#219377]">{app.name}</h3>
+              <h3 className="mb-2 text-xl font-bold text-[#219377]">{app.name}</h3>
               <p className="text-gray-600">{app.desc}</p>
             </Link>
           ))}
@@ -180,7 +172,7 @@ const WelcomePage = () => {
             Pay as you grow. Flexible plans for landlords, managers and enterprises.<br />
             <span className="font-semibold text-[#ffbd59]">Start free, no setup fees, cancel anytime.</span>
           </p>
-          <Link to="/pricing">
+          <Link to={ROUTES.PRICING}>
             <button className="bg-[#219377] text-white text-lg font-bold px-10 py-3 rounded-xl shadow-md hover:bg-[#1a7c67] transition animate-fade-in delay-200">
               View Pricing
             </button>
@@ -188,7 +180,7 @@ const WelcomePage = () => {
         </div>
       </section>
 
-      {/* Animations */}
+      {/* Animations (kept as inline style for simplicity as they are specific to this page) */}
       <style>
         {`
         @keyframes fade-in {

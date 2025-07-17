@@ -1,6 +1,8 @@
-// frontend/src/services/unitService.js
+// client/src/services/unitService.js
 
 import api from "../api/axios.js"; // Corrected import path
+
+const PROPERTY_UNIT_BASE_URL = '/properties'; // For nested unit routes
 
 /**
  * Creates a new unit within a specific property.
@@ -10,26 +12,27 @@ import api from "../api/axios.js"; // Corrected import path
  */
 export const createUnit = async (propertyId, unitData) => {
     try {
-        const res = await api.post(`/properties/${propertyId}/units`, unitData); // Nested endpoint
+        const res = await api.post(`${PROPERTY_UNIT_BASE_URL}/${propertyId}/units`, unitData); // Nested endpoint
         return res.data;
     } catch (error) {
         console.error("createUnit error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
 /**
  * Retrieves a list of units for a specific property.
  * @param {string} propertyId - The ID of the property.
+ * @param {object} [params={}] - Optional query parameters for filtering (e.g., status, numBedrooms, search, page, limit).
  * @returns {Promise<object[]>} An array of unit objects.
  */
-export const listUnits = async (propertyId) => {
+export const getUnitsForProperty = async (propertyId, params = {}) => {
     try {
-        const res = await api.get(`/properties/${propertyId}/units`); // Nested endpoint
+        const res = await api.get(`${PROPERTY_UNIT_BASE_URL}/${propertyId}/units`, { params }); // Nested endpoint
         return res.data;
     } catch (error) {
-        console.error("listUnits error:", error.response?.data || error.message);
-        throw error;
+        console.error("getUnitsForProperty error:", error.response?.data || error.message);
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -39,13 +42,13 @@ export const listUnits = async (propertyId) => {
  * @param {string} unitId - The ID of the unit.
  * @returns {Promise<object>} The unit object.
  */
-export const getUnitDetails = async (propertyId, unitId) => {
+export const getUnitById = async (propertyId, unitId) => {
     try {
-        const res = await api.get(`/properties/${propertyId}/units/${unitId}`); // Nested endpoint
+        const res = await api.get(`${PROPERTY_UNIT_BASE_URL}/${propertyId}/units/${unitId}`); // Nested endpoint
         return res.data;
     } catch (error) {
-        console.error("getUnitDetails error:", error.response?.data || error.message);
-        throw error;
+        console.error("getUnitById error:", error.response?.data || error.message);
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -58,11 +61,11 @@ export const getUnitDetails = async (propertyId, unitId) => {
  */
 export const updateUnit = async (propertyId, unitId, updates) => {
     try {
-        const res = await api.put(`/properties/${propertyId}/units/${unitId}`, updates); // Nested endpoint
+        const res = await api.put(`${PROPERTY_UNIT_BASE_URL}/${propertyId}/units/${unitId}`, updates); // Nested endpoint
         return res.data;
     } catch (error) {
         console.error("updateUnit error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -74,11 +77,11 @@ export const updateUnit = async (propertyId, unitId, updates) => {
  */
 export const deleteUnit = async (propertyId, unitId) => {
     try {
-        const res = await api.delete(`/properties/${propertyId}/units/${unitId}`); // Nested endpoint
+        const res = await api.delete(`${PROPERTY_UNIT_BASE_URL}/${propertyId}/units/${unitId}`); // Nested endpoint
         return res.data;
     } catch (error) {
         console.error("deleteUnit error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -91,11 +94,12 @@ export const deleteUnit = async (propertyId, unitId) => {
  */
 export const assignTenantToUnit = async (propertyId, unitId, tenantId) => {
     try {
-        const res = await api.post(`/properties/${propertyId}/units/${unitId}/assign-tenant`, { tenantId });
+        // Backend uses POST /properties/:propertyId/units/:unitId/assign-tenant
+        const res = await api.post(`${PROPERTY_UNIT_BASE_URL}/${propertyId}/units/${unitId}/assign-tenant`, { tenantId });
         return res.data;
     } catch (error) {
         console.error("assignTenantToUnit error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };
 
@@ -108,10 +112,11 @@ export const assignTenantToUnit = async (propertyId, unitId, tenantId) => {
  */
 export const removeTenantFromUnit = async (propertyId, unitId, tenantId) => {
     try {
-        const res = await api.delete(`/properties/${propertyId}/units/${unitId}/remove-tenant/${tenantId}`);
+        // Backend uses DELETE /properties/:propertyId/units/:unitId/remove-tenant/:tenantId
+        const res = await api.delete(`${PROPERTY_UNIT_BASE_URL}/${propertyId}/units/${unitId}/remove-tenant/${tenantId}`);
         return res.data;
     } catch (error) {
         console.error("removeTenantFromUnit error:", error.response?.data || error.message);
-        throw error;
+        throw error.response?.data?.message || error.message;
     }
 };

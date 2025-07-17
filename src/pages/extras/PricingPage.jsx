@@ -1,8 +1,9 @@
-﻿// Shared Imports
+// Shared Imports
 import { Link } from "react-router-dom";
 import { CheckCircle, HelpCircle, DollarSign, Settings } from "lucide-react";
 // Pricing Page
-export const PricingPage = () => {
+
+const PricingPage = () => {
   const plans = [
     {
       name: "Starter",
@@ -68,3 +69,5 @@ export const PricingPage = () => {
     </div>
   );
 };
+
+export default PricingPage;

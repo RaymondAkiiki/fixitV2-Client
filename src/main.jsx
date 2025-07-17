@@ -1,4 +1,5 @@
 // frontend/src/main.jsx
+console.log('--- MAIN JSX FILE LOADED ---'); // Add this line
 
 console.log("Starting React app...");
 import "./index.css";
@@ -10,10 +11,14 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 
 // Import Context Providers - ensure correct paths with .jsx extension
-import { AuthProvider } from "./context/AuthContext.jsx";
-import { PermissionProvider } from "./context/PermissionContext.jsx";
-import { NotificationProvider } from "./context/NotificationContext.jsx"; // Re-added
-import { GlobalAlertProvider } from "./context/GlobalAlertContext.jsx";   // Re-added
+import { AuthProvider } from "./contexts/AuthContext.jsx"; // Corrected path
+import { PermissionProvider } from "./contexts/PermissionContext.jsx"; // Corrected path
+import { NotificationProvider } from "./contexts/NotificationContext.jsx"; // Corrected path
+import { GlobalAlertProvider } from "./contexts/GlobalAlertContext.jsx";   // Corrected path
+import { PropertyProvider } from './contexts/PropertyContext.jsx'; // Corrected path
+import { LeaseProvider } from './contexts/LeaseContext.jsx'; // Corrected path
+import { RentProvider } from './contexts/RentContext.jsx'; // Corrected path
+
 
 console.log("React is rendering...");
 // Render the App
@@ -30,16 +35,22 @@ root.render(
         <NotificationProvider>
           {/* PermissionProvider depends on AuthProvider for user role. */}
           <PermissionProvider>
-            {/* BrowserRouter should wrap the main App components for routing. */}
-           
-              <BrowserRouter>
-                <App />
-              </BrowserRouter>
-           
+            {/* PropertyProvider depends on AuthProvider for user's properties */}
+            <PropertyProvider>
+              {/* LeaseProvider depends on AuthProvider and PropertyProvider */}
+              <LeaseProvider>
+                {/* RentProvider depends on AuthProvider and LeaseProvider */}
+                <RentProvider>
+                  {/* BrowserRouter should wrap the main App components for routing. */}
+                  <BrowserRouter>
+                    <App />
+                  </BrowserRouter>
+                </RentProvider>
+              </LeaseProvider>
+            </PropertyProvider>
           </PermissionProvider>
         </NotificationProvider>
       </AuthProvider>
     </GlobalAlertProvider>
   </React.StrictMode>
 );
-

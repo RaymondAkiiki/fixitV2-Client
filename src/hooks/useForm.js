@@ -1,81 +1,68 @@
-// frontend/src/hooks/useForm.js
-
-// This custom hook manages form state, handles input changes, and performs validation.
-// It simplifies working with forms in React components.
-
 import { useState, useCallback } from 'react';
 
 /**
- * Custom hook for managing form state and validation.
- * @param {object} initialValues - The initial values for the form fields.
- * @param {function} validate - A function that takes form values and returns an errors object.
- * E.g., `(values) => { const errors = {}; if (!values.name) errors.name = 'Required'; return errors; }`
- * @returns {object} An object containing:
- * - `values`: The current state of form inputs.
- * - `errors`: An object containing validation errors for each field.
- * - `handleChange`: Event handler for input changes.
- * - `handleSubmit`: Function to handle form submission.
- * - `resetForm`: Function to reset the form to initial values.
- * - `setValues`: Direct setter for values (useful for pre-populating forms).
+ * Custom hook for managing form state, input changes, and validation.
+ * @param {object} initialValues - The initial state of the form fields.
+ * @param {function} validate - A function that returns an errors object.
+ * @param {function} onSubmitCallback - An async function to call on successful submission.
  */
-const useForm = (initialValues, validate) => {
+const useForm = (initialValues, validate, onSubmitCallback) => {
     const [values, setValues] = useState(initialValues);
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
 
-    // Handles changes to form input fields
     const handleChange = useCallback((e) => {
-        const { name, value, type, checked } = e.target;
-        setValues(prevValues => ({
-            ...prevValues,
-            [name]: type === 'checkbox' ? checked : value,
-        }));
+        const { name, value, type, checked, files } = e.target;
+        const inputValue = type === 'checkbox' ? checked : (type === 'file' ? files : value);
+        
+        setValues(prev => ({ ...prev, [name]: inputValue }));
 
-        // Clear error for the field being changed
-        if (errors[name]) {
-            setErrors(prevErrors => {
-                const newErrors = { ...prevErrors };
+        // If the form has been submitted once, clear errors on change
+        if (isSubmitted) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
                 delete newErrors[name];
                 return newErrors;
             });
         }
-    }, [errors]); // Dependency on errors to correctly clear them
+    }, [isSubmitted]);
 
-    // Handles form submission
-    const handleSubmit = useCallback(async (callback) => {
-        setIsSubmitting(true);
+    const handleSubmit = useCallback(async (e) => {
+        if (e) e.preventDefault();
+        
+        setIsSubmitted(true);
         const validationErrors = validate(values);
         setErrors(validationErrors);
 
         if (Object.keys(validationErrors).length === 0) {
-            // If no validation errors, call the provided callback function
+            setIsSubmitting(true);
             try {
-                await callback(values);
-                // After successful submission, you might want to reset the form or handle success
-                // resetForm(); // Optional: reset form after success
+                await onSubmitCallback(values);
+                // The calling component is responsible for success actions (like resetting the form or navigating).
             } catch (err) {
-                console.error('Form submission callback failed:', err);
-                // Handle errors from the callback (e.g., API errors)
-                // You might set a global alert here or update a specific form error state
+                // The error is already handled by useApi and shown by GlobalAlertContext.
+                // No need to log it again here. The component's catch block will see it.
+            } finally {
+                setIsSubmitting(false);
             }
         }
-        setIsSubmitting(false);
-    }, [values, validate]);
+    }, [values, validate, onSubmitCallback]);
 
-    // Resets the form to its initial values
     const resetForm = useCallback(() => {
         setValues(initialValues);
         setErrors({});
         setIsSubmitting(false);
+        setIsSubmitted(false);
     }, [initialValues]);
 
     return {
         values,
         errors,
+        setValues,
         handleChange,
         handleSubmit,
         resetForm,
-        setValues, // Expose setValues for direct manipulation if needed (e.g., when loading existing data)
         isSubmitting,
     };
 };
