@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from './common/Button.jsx';
 import { initGoogleAuth, handleGoogleSignIn } from '../services/authService';
@@ -13,6 +13,75 @@ const GoogleAuthButton = ({ text = 'Sign in with Google', onSuccess, onError, us
   const { showError, showSuccess } = useGlobalAlert();
   const navigate = useNavigate();
   const buttonRef = useRef(null);
+
+  const handleGoogleResponse = useCallback(async (response) => {
+    if (!response.credential) {
+      showError('No credential received from Google');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await handleGoogleSignIn(response);
+      
+      if (result.success) {
+        showSuccess(result.message || 'Successfully signed in with Google!');
+        
+        if (onSuccess && typeof onSuccess === 'function') {
+          onSuccess(result);
+        } else {
+          navigateBasedOnRole(result.user);
+        }
+      }
+    } catch (err) {
+      console.error('Google sign in error:', err);
+      showError(err.message || 'Failed to sign in with Google. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showError, showSuccess, onSuccess, navigateBasedOnRole]);
+
+  const renderGoogleButton = useCallback(() => {
+    try {
+      if (!window.google?.accounts) {
+        setError('Google Identity Services not loaded');
+        return;
+      }
+
+      if (!buttonRef.current) {
+        setError('Button reference not found');
+        return;
+      }
+
+      const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      
+      // Initialize Google Identity Services with callback
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+
+      // Clear any existing content
+      buttonRef.current.innerHTML = '';
+
+      // Render the button
+      window.google.accounts.id.renderButton(buttonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        width: buttonRef.current.offsetWidth || 300,
+        text: 'signin_with',
+        shape: 'rectangular',
+      });
+
+      setDebugInfo('Button rendered successfully');
+    } catch (err) {
+      console.error('Error rendering Google button:', err);
+      setError(`Render failed: ${err.message}`);
+      setDebugInfo(`Render error: ${err.message}`);
+    }
+  }, [handleGoogleResponse]);
 
   useEffect(() => {
     console.log('=== ENHANCED GOOGLE AUTH DEBUG ===');
@@ -61,76 +130,7 @@ const GoogleAuthButton = ({ text = 'Sign in with Google', onSuccess, onError, us
     };
 
     initializeGoogleAuth();
-  }, [usePopup, onError]);
-
-  const renderGoogleButton = () => {
-    try {
-      if (!window.google?.accounts) {
-        setError('Google Identity Services not loaded');
-        return;
-      }
-
-      if (!buttonRef.current) {
-        setError('Button reference not found');
-        return;
-      }
-
-      const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      
-      // Initialize Google Identity Services with callback
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleResponse,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
-
-      // Clear any existing content
-      buttonRef.current.innerHTML = '';
-
-      // Render the Google Sign-In button
-      window.google.accounts.id.renderButton(buttonRef.current, {
-        theme: 'outline',
-        size: 'large',
-        width: buttonRef.current.offsetWidth || 300,
-        text: 'signin_with',
-        shape: 'rectangular',
-      });
-
-      setDebugInfo('Button rendered successfully');
-    } catch (err) {
-      console.error('Error rendering Google button:', err);
-      setError(`Render failed: ${err.message}`);
-      setDebugInfo(`Render error: ${err.message}`);
-    }
-  };
-
-  const handleGoogleResponse = async (response) => {
-    if (!response.credential) {
-      showError('No credential received from Google');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const result = await handleGoogleSignIn(response);
-      
-      if (result.success) {
-        showSuccess(result.message || 'Successfully signed in with Google!');
-        
-        if (onSuccess && typeof onSuccess === 'function') {
-          onSuccess(result);
-        } else {
-          navigateBasedOnRole(result.user);
-        }
-      }
-    } catch (err) {
-      console.error('Google sign in error:', err);
-      showError(err.message || 'Failed to sign in with Google. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [usePopup, onError, renderGoogleButton]);
 
   const handlePopupSignIn = async () => {
     setIsLoading(true);

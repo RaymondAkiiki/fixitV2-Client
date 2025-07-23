@@ -23,8 +23,7 @@ const SECONDARY_COLOR = '#ffbd59';
 function UnitListPage() {
   const { propertyId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user, isAdmin, isPropertyManager, isLandlord } = useAuth();
+  const { isAdmin, isPropertyManager, isLandlord } = useAuth();
   const { showSuccess, showError } = useGlobalAlert();
 
   const [property, setProperty] = useState(null);
@@ -36,7 +35,6 @@ function UnitListPage() {
   // Pagination state
   const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
   // Add Unit Modal

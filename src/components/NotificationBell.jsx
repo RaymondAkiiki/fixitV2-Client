@@ -36,7 +36,7 @@ const NotificationBell = () => {
   const formatDate = (dateString) => {
     try {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
-    } catch (err) {
+    } catch {
       return 'unknown date';
     }
   };

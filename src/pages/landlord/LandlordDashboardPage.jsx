@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
 
 // Import DashboardService for optimized data fetching
-import DashboardService from '../../services/DashboardService.js';
+import DashboardService from '../../services/dashboardService.js';
 
 // Component Imports
 import StatCard from '../../components/StatCard.jsx';

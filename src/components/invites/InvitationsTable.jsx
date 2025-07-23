@@ -33,7 +33,7 @@ const InvitationsTable = () => {
         total: response.total || 0,
         totalPages: response.totalPages || 1
       });
-    } catch (error) {
+    } catch {
       showError('Failed to load invitations');
     } finally {
       setLoading(false);
@@ -42,7 +42,7 @@ const InvitationsTable = () => {
   
   useEffect(() => {
     fetchInvites();
-  }, [filter, pagination.page, pagination.limit]);
+  }, [filter, pagination.page, pagination.limit, fetchInvites]);
   
   const handleCancelInvite = async (inviteId) => {
     if (!window.confirm('Are you sure you want to cancel this invitation?')) {
@@ -53,7 +53,7 @@ const InvitationsTable = () => {
       await inviteService.cancelInvite(inviteId);
       showSuccess('Invitation cancelled successfully');
       fetchInvites();
-    } catch (error) {
+    } catch {
       showError('Failed to cancel invitation');
     }
   };
@@ -63,7 +63,7 @@ const InvitationsTable = () => {
       await inviteService.resendInvite(inviteId);
       showSuccess('Invitation resent successfully');
       fetchInvites();
-    } catch (error) {
+    } catch {
       showError('Failed to resend invitation');
     }
   };

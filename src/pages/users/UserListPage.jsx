@@ -227,17 +227,19 @@ const UserListPage = () => {
     
     // Reset unit selection when property or role changes
     if (name === 'propertyId' || name === 'role') {
-      const newForm = {
-        ...prev,
-        [name]: value
-      };
-      
-      // Clear unitId if property changes or role is not tenant
-      if (name === 'propertyId' || (name === 'role' && value !== 'tenant')) {
-        newForm.unitId = '';
-      }
-      
-      setInviteForm(newForm);
+      setInviteForm(prev => {
+        const newForm = {
+          ...prev,
+          [name]: value
+        };
+        
+        // Clear unitId if property changes or role is not tenant
+        if (name === 'propertyId' || (name === 'role' && value !== 'tenant')) {
+          newForm.unitId = '';
+        }
+        
+        return newForm;
+      });
     } else {
       setInviteForm(prev => ({
         ...prev,

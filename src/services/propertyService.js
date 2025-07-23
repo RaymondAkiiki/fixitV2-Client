@@ -1,8 +1,7 @@
 // client/src/services/propertyService.js
 
 import api from "../api/axios.js";
-import axios from "axios";
-import { extractApiResponse, logApiResponse } from "../utils/apiUtils.js";
+import { extractApiResponse, logApiResponse, handleApiError } from "../utils/apiUtils.js";
 
 const SERVICE_NAME = 'propertyService';
 const PROPERTY_BASE_URL = '/properties';
@@ -29,13 +28,7 @@ export const getAllProperties = async (params = {}, signal) => {
             pages: meta.pages || 1
         };
     } catch (error) {
-        if (axios.isCancel(error)) {
-            console.log('Request was canceled', error.message);
-            throw new Error('Request canceled');
-        }
-        
-        console.error("getAllProperties error:", error);
-        throw error.response?.data?.message || error.message;
+        handleApiError(error, 'getAllProperties');
     }
 };
 
@@ -55,13 +48,7 @@ export const getPropertyById = async (propertyId, signal) => {
         
         return data;
     } catch (error) {
-        if (axios.isCancel(error)) {
-            console.log('Request was canceled', error.message);
-            throw new Error('Request canceled');
-        }
-        
-        console.error("getPropertyById error:", error);
-        throw error.response?.data?.message || error.message;
+        handleApiError(error, 'getPropertyById');
     }
 };
 
@@ -81,13 +68,7 @@ export const createProperty = async (propertyData, signal) => {
         
         return data;
     } catch (error) {
-        if (axios.isCancel(error)) {
-            console.log('Request was canceled', error.message);
-            throw new Error('Request canceled');
-        }
-        
-        console.error("createProperty error:", error);
-        throw error.response?.data?.message || error.message;
+        handleApiError(error, 'createProperty');
     }
 };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, LogOut, Menu, User, Calendar } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useNotifications } from '../contexts/NotificationContext';
 import useRoleBasedPath from '../hooks/useRoleBasedPath'; // Import the custom hook
 
@@ -15,9 +15,8 @@ const Navbar = ({
 }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [currentTime, setCurrentTime] = useState('');
-  const { basePath, getPath } = useRoleBasedPath(); // Use the custom hook
+  const { getPath } = useRoleBasedPath(); // Use the custom hook
   
   // Safely access notifications with error handling
   const notificationsContext = useNotifications();
