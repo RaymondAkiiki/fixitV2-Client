@@ -1,11 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { requestPasswordReset } from '../../services/authService.js';
+import { Link, useNavigate } from 'react-router-dom';
+import { forgotPassword } from '../../services/authService.js';
 import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
 import useForm from '../../hooks/useForm.js';
 import Input from '../../components/common/Input.jsx';
 import Button from '../../components/common/Button.jsx';
-import { Mail, ArrowLeft, Lock } from 'lucide-react';
+import { Mail, ArrowLeft } from 'lucide-react';
 import { ROUTES } from '../../utils/constants.js';
 
 // Validation for forgot password form
@@ -21,6 +21,7 @@ const validateForgotPasswordForm = (values) => {
 
 const ForgotPasswordPage = () => {
   const { showSuccess, showError } = useGlobalAlert();
+  const navigate = useNavigate();
 
   const {
     values,
@@ -33,8 +34,13 @@ const ForgotPasswordPage = () => {
     validateForgotPasswordForm,
     async (formValues) => {
       try {
-        await requestPasswordReset(formValues.email);
-        showSuccess('Password reset link sent to your email address. Please check your inbox (and spam folder)!');
+        const response = await forgotPassword(formValues.email);
+        showSuccess(response.message || 'Password reset link sent to your email address. Please check your inbox (and spam folder)!');
+        
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+          navigate(ROUTES.LOGIN);
+        }, 3000);
       } catch (err) {
         console.error("Forgot password error in ForgotPasswordPage:", err);
         showError(err.response?.data?.message || 'Failed to send reset link. Please try again.');
@@ -48,10 +54,7 @@ const ForgotPasswordPage = () => {
       <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Forgot Password?</h2>
       <p className="text-gray-600 mb-6">Enter your email address to receive a password reset link.</p>
 
-      {/* Alerts handled globally */}
-
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Email Input */}
         <Input
           label="Email Address"
           id="email"
@@ -63,9 +66,9 @@ const ForgotPasswordPage = () => {
           required
           error={errors.email}
           disabled={isSubmitting}
+          autoComplete="email"
         />
 
-        {/* Submit Button */}
         <Button
           type="submit"
           variant="primary"
@@ -77,13 +80,9 @@ const ForgotPasswordPage = () => {
         </Button>
       </form>
 
-      <div className="mt-6 flex flex-col gap-2 items-center">
+      <div className="mt-6">
         <Link to={ROUTES.LOGIN} className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 hover:underline font-medium transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
-        </Link>
-        {/* Developer/test only: show reset password page link with test token */}
-        <Link to={ROUTES.RESET_PASSWORD.replace(':token', 'test-token')} className="inline-flex items-center text-xs text-gray-400 hover:text-gray-800 hover:underline font-medium transition-colors">
-          <Lock className="w-4 h-4 mr-2" /> Test "Set Password" Page
         </Link>
       </div>
     </div>

@@ -136,3 +136,53 @@ export const buildQueryParams = (params) => {
         .join('&');
     return queryString ? `?${queryString}` : '';
 };
+
+/**
+ * Formats a number as a currency string
+ * @param {number} amount - The amount to format
+ * @param {string} [currencyCode='USD'] - The currency code (e.g., 'USD', 'EUR', 'GBP')
+ * @param {string} [locale='en-US'] - The locale to use for formatting
+ * @returns {string} The formatted currency string
+ */
+export const formatCurrency = (amount, currencyCode = 'USD', locale = 'en-US') => {
+    if (amount === undefined || amount === null) return '';
+    
+    try {
+        // Convert to number if it's a string
+        const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+        
+        // Check if conversion resulted in a valid number
+        if (isNaN(numericAmount)) {
+            return 'Invalid Amount';
+        }
+        
+        // Format using Intl.NumberFormat
+        return new Intl.NumberFormat(locale, {
+            style: 'currency',
+            currency: currencyCode,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(numericAmount);
+    } catch (error) {
+        console.error('Error formatting currency:', error);
+        return `${currencyCode} ${amount}`;
+    }
+};
+
+/**
+ * Formats a size in bytes to a human-readable string (KB, MB, GB, etc)
+ * @param {number} bytes - Size in bytes
+ * @param {number} [decimals=2] - Number of decimal places to display
+ * @returns {string} Formatted size string
+ */
+export const formatBytes = (bytes, decimals = 2) => {
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};

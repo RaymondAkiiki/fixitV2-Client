@@ -1,110 +1,237 @@
 // client/src/services/reportService.js
 
 import api from "../api/axios.js";
+import axios from "axios";
+import { extractApiResponse, logApiResponse } from "../utils/apiUtils.js";
 
+const SERVICE_NAME = 'reportService';
 const REPORT_BASE_URL = '/reports';
 
 /**
- * Fetches a comprehensive maintenance summary report with all details and supports filters & pagination.
- * @param {object} params - Query params: propertyId, status, category, assignedToId, assignedToModel, startDate, endDate, format, page, limit
- * @returns {Promise<object>} { data: [...], pagination: {...} }
+ * Get a maintenance summary report
+ * @param {Object} [filters={}] - Query parameters for filtering
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<Object>} The report data
  */
-export const getMaintenanceSummaryReport = async (params = {}) => { // Renamed from generateMaintenanceSummaryReport
-    try {
-        const res = await api.get(`${REPORT_BASE_URL}/maintenance-summary`, { params });
-        return res.data; // { data: [...], pagination: {...} }
-    } catch (error) {
-        console.error("getMaintenanceSummaryReport error:", error.response?.data || error.message);
-        throw error.response?.data?.message || error.message;
+export const getMaintenanceSummaryReport = async (filters = {}, signal) => {
+  try {
+    const res = await api.get(`${REPORT_BASE_URL}/maintenance-summary`, { 
+      params: filters,
+      signal 
+    });
+    const { data } = extractApiResponse(res.data);
+    
+    logApiResponse(SERVICE_NAME, 'getMaintenanceSummaryReport', { data });
+    
+    return data;
+  } catch (error) {
+    if (axios.isCancel(error)) {
+      console.log('Request was canceled', error.message);
+      throw new Error("Request canceled");
     }
+    console.error("getMaintenanceSummaryReport error:", error);
+    throw error.response?.data?.message || error.message;
+  }
 };
 
 /**
- * Generates a report on vendor performance (average resolution times, ratings).
- * @param {object} params - Query params: propertyId, vendorId, startDate, endDate
- * @returns {Promise<object[]>} Array of vendor performance data.
+ * Get a vendor performance report
+ * @param {Object} [filters={}] - Query parameters for filtering
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<Object>} The report data
  */
-export const getVendorPerformanceReport = async (params = {}) => {
-    try {
-        const res = await api.get(`${REPORT_BASE_URL}/vendor-performance`, { params });
-        return res.data;
-    } catch (error) {
-        console.error("getVendorPerformanceReport error:", error.response?.data || error.message);
-        throw error.response?.data?.message || error.message;
+export const getVendorPerformanceReport = async (filters = {}, signal) => {
+  try {
+    const res = await api.get(`${REPORT_BASE_URL}/vendor-performance`, { 
+      params: filters,
+      signal
+    });
+    const { data } = extractApiResponse(res.data);
+    
+    logApiResponse(SERVICE_NAME, 'getVendorPerformanceReport', { data });
+    
+    return data;
+  } catch (error) {
+    if (axios.isCancel(error)) {
+      console.log('Request was canceled', error.message);
+      throw new Error("Request canceled");
     }
+    console.error("getVendorPerformanceReport error:", error);
+    throw error.response?.data?.message || error.message;
+  }
 };
 
 /**
- * Generates a report on most frequent issue categories.
- * @param {object} params - Query params: propertyId, startDate, endDate
- * @returns {Promise<object[]>} Array of { category, count, averageResolutionTimeHours }
+ * Get a common issues report
+ * @param {Object} [filters={}] - Query parameters for filtering
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<Object>} The report data
  */
-export const getCommonIssuesReport = async (params = {}) => {
-    try {
-        const res = await api.get(`${REPORT_BASE_URL}/common-issues`, { params });
-        return res.data;
-    } catch (error) {
-        console.error("getCommonIssuesReport error:", error.response?.data || error.message);
-        throw error.response?.data?.message || error.message;
+export const getCommonIssuesReport = async (filters = {}, signal) => {
+  try {
+    const res = await api.get(`${REPORT_BASE_URL}/common-issues`, { 
+      params: filters,
+      signal
+    });
+    const { data } = extractApiResponse(res.data);
+    
+    logApiResponse(SERVICE_NAME, 'getCommonIssuesReport', { data });
+    
+    return data;
+  } catch (error) {
+    if (axios.isCancel(error)) {
+      console.log('Request was canceled', error.message);
+      throw new Error("Request canceled");
     }
+    console.error("getCommonIssuesReport error:", error);
+    throw error.response?.data?.message || error.message;
+  }
 };
 
 /**
- * Retrieves a rent collection report.
- * @param {object} params - Query params: propertyId, unitId, status, tenantId, billingPeriod, startDate, endDate.
- * @returns {Promise<object[]>} Array of rent collection data.
+ * Get a rent collection report
+ * @param {Object} [filters={}] - Query parameters for filtering
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<Object>} The report data
  */
-export const getRentCollectionReport = async (params = {}) => {
-    try {
-        const res = await api.get(`${REPORT_BASE_URL}/rent-collection`, { params });
-        return res.data;
-    } catch (error) {
-        console.error("getRentCollectionReport error:", error.response?.data || error.message);
-        throw error.response?.data?.message || error.message;
+export const getRentCollectionReport = async (filters = {}, signal) => {
+  try {
+    const res = await api.get(`${REPORT_BASE_URL}/rent-collection`, { 
+      params: filters,
+      signal
+    });
+    const { data } = extractApiResponse(res.data);
+    
+    logApiResponse(SERVICE_NAME, 'getRentCollectionReport', { data });
+    
+    return data;
+  } catch (error) {
+    if (axios.isCancel(error)) {
+      console.log('Request was canceled', error.message);
+      throw new Error("Request canceled");
     }
+    console.error("getRentCollectionReport error:", error);
+    throw error.response?.data?.message || error.message;
+  }
 };
 
 /**
- * Retrieves a lease expiry report.
- * @param {object} params - Query params: propertyId, unitId, status, tenantId, expiryStartDate, expiryEndDate.
- * @returns {Promise<object[]>} Array of lease expiry data.
+ * Get a lease expiry report
+ * @param {Object} [filters={}] - Query parameters for filtering
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<Object>} The report data
  */
-export const getLeaseExpiryReport = async (params = {}) => {
-    try {
-        const res = await api.get(`${REPORT_BASE_URL}/lease-expiry`, { params });
-        return res.data;
-    } catch (error) {
-        console.error("getLeaseExpiryReport error:", error.response?.data || error.message);
-        throw error.response?.data?.message || error.message;
+export const getLeaseExpiryReport = async (filters = {}, signal) => {
+  try {
+    const res = await api.get(`${REPORT_BASE_URL}/lease-expiry`, { 
+      params: filters,
+      signal
+    });
+    const { data } = extractApiResponse(res.data);
+    
+    logApiResponse(SERVICE_NAME, 'getLeaseExpiryReport', { data });
+    
+    return data;
+  } catch (error) {
+    if (axios.isCancel(error)) {
+      console.log('Request was canceled', error.message);
+      throw new Error("Request canceled");
     }
+    console.error("getLeaseExpiryReport error:", error);
+    throw error.response?.data?.message || error.message;
+  }
 };
 
 /**
- * Exports a report as a PDF or CSV.
- * @param {string} type - The type of report to export ('maintenance_summary', 'vendor_performance', 'common_issues', 'rent_collection', 'lease_expiry').
- * @param {string} format - The export format ('csv' or 'pdf').
- * @param {object} [params={}] - Additional query parameters for the report.
- * @returns {Promise<void>} Automatically triggers download in the browser.
+ * Generate a document from a report
+ * @param {string} reportType - Type of report
+ * @param {Object} [filters={}] - Filters for the report
+ * @param {Object} [options={}] - Additional options
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<Object>} The generated document metadata
  */
-export const exportReport = async (type, format, params = {}) => {
-    try {
-        const p = { ...params, type, format };
-        const res = await api.get(`${REPORT_BASE_URL}/export`, {
-            params: p,
-            responseType: 'blob',
-        });
-        const blobType = format === 'pdf' ? 'application/pdf' : 'text/csv';
-        const fileName = `${type}_report.${format}`;
-
-        const url = window.URL.createObjectURL(new Blob([res.data], { type: blobType }));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', fileName);
-        document.body.appendChild(link);
-        link.click();
-        link.parentNode.removeChild(link);
-    } catch (error) {
-        console.error("exportReport error:", error.response?.data || error.message);
-        throw error.response?.data?.message || error.message;
+export const generateReportDocument = async (reportType, filters = {}, options = {}, signal) => {
+  try {
+    const res = await api.post(`${REPORT_BASE_URL}/document`, {
+      reportType,
+      filters,
+      options
+    }, { signal });
+    
+    const { data } = extractApiResponse(res.data);
+    
+    logApiResponse(SERVICE_NAME, 'generateReportDocument', { data });
+    
+    return data;
+  } catch (error) {
+    if (axios.isCancel(error)) {
+      console.log('Request was canceled', error.message);
+      throw new Error("Request canceled");
     }
+    console.error("generateReportDocument error:", error);
+    throw error.response?.data?.message || error.message;
+  }
+};
+
+/**
+ * Export a report in a specific format
+ * @param {string} reportType - Type of report
+ * @param {string} format - Export format ('csv' or 'pdf')
+ * @param {Object} [filters={}] - Filters for the report
+ * @returns {Promise<Blob|Object>} For CSV: a Blob for download, for PDF: document metadata
+ */
+export const exportReport = async (reportType, format, filters = {}) => {
+  try {
+    // For PDF format, use the document generation endpoint
+    if (format.toLowerCase() === 'pdf') {
+      return await generateReportDocument(reportType, filters);
+    }
+    
+    // For CSV format, use the export endpoint with responseType: 'blob'
+    const params = new URLSearchParams({
+      ...filters,
+      type: reportType,
+      format: 'csv'
+    });
+    
+    const res = await api.get(`${REPORT_BASE_URL}/export?${params.toString()}`, {
+      responseType: 'blob'
+    });
+    
+    // Trigger download of the CSV file
+    const blob = new Blob([res.data], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    
+    // Try to get filename from content-disposition header
+    const contentDisposition = res.headers['content-disposition'];
+    const fileName = contentDisposition
+      ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+      : `${reportType}_report.csv`;
+      
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    logApiResponse(SERVICE_NAME, 'exportReport', { success: true, message: 'Report downloaded successfully' });
+    
+    return { success: true, message: 'Report downloaded successfully' };
+  } catch (error) {
+    console.error("exportReport error:", error);
+    throw error.response?.data?.message || error.message;
+  }
+};
+
+export default {
+  getMaintenanceSummaryReport,
+  getVendorPerformanceReport,
+  getCommonIssuesReport,
+  getRentCollectionReport,
+  getLeaseExpiryReport,
+  generateReportDocument,
+  exportReport
 };

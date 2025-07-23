@@ -69,7 +69,7 @@ const Header = () => {
             to="/demo"
             className="ml-2 px-4 py-2 rounded-full font-semibold text-white bg-[#219377] border-2 border-[#ffbd59] hover:bg-[#ffbd59] hover:text-[#219377] transition-all duration-200 hidden lg:inline-block"
           >
-            Book a Demo
+            About Us
           </Link>
         </div>
 

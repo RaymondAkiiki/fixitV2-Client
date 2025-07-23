@@ -29,8 +29,15 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const logout = useCallback(async (isManual = false) => {
-        await authService.logoutUser();
+        try {
+            await authService.logoutUser();
+        } catch (error) {
+            console.error("Logout API error:", error);
+            // Continue with local logout even if API call fails
+        }
+        
         clearSession();
+        
         if (isManual) {
             showSuccess("You have been logged out successfully.");
         }
@@ -52,7 +59,7 @@ export const AuthProvider = ({ children }) => {
             }
             throw new Error("Login failed: Invalid response from server.");
         } catch (err) {
-            const errorMessage = err.response?.data?.message || "An unknown error occurred during login.";
+            const errorMessage = err.response?.data?.message || err.message || "An unknown error occurred during login.";
             showError(errorMessage);
             clearSession();
             throw err;
@@ -67,11 +74,33 @@ export const AuthProvider = ({ children }) => {
             showSuccess("Registration successful! Please check your email to verify your account.");
             return registrationData;
         } catch (err) {
-            const errorMessage = err.response?.data?.message || "An unknown error occurred during registration.";
+            const errorMessage = err.response?.data?.message || err.message || "An unknown error occurred during registration.";
             showError(errorMessage);
             throw err;
         }
     }, [showError, showSuccess]);
+
+    // New method for Google Authentication
+    const loginWithGoogle = useCallback(async (idToken) => {
+        setLoading(true);
+        setAuthError(null);
+        try {
+            const responseData = await authService.loginWithGoogle(idToken);
+            if (responseData?.user && responseData?.accessToken) {
+                setupSession(responseData.user, responseData.accessToken);
+                showSuccess(responseData.message || "Google login successful!");
+                return responseData;
+            }
+            throw new Error("Google login failed: Invalid response from server.");
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || err.message || "An unknown error occurred during Google login.";
+            showError(errorMessage);
+            clearSession();
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [setupSession, clearSession, showSuccess, showError]);
 
     useEffect(() => {
         const checkAuthStatus = async () => {
@@ -103,7 +132,6 @@ export const AuthProvider = ({ children }) => {
         };
 
         checkAuthStatus();
-        // ✅ **THE FIX IS HERE** ✅
         // This effect should only run ONCE on mount.
         // We disable the exhaustive-deps rule because we are intentionally
         // referencing functions defined outside that should not trigger a re-run.
@@ -118,13 +146,14 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout: manualLogout,
+        loginWithGoogle, // Added Google login method to context
         hasRole: (roleToCheck) => user?.role?.toLowerCase() === roleToCheck.toLowerCase(),
         hasAnyRole: (rolesArray) => rolesArray.some(role => user?.role?.toLowerCase() === role.toLowerCase()),
         isAdmin: user?.role?.toLowerCase() === USER_ROLES.ADMIN,
         isPropertyManager: user?.role?.toLowerCase() === USER_ROLES.PROPERTY_MANAGER,
         isLandlord: user?.role?.toLowerCase() === USER_ROLES.LANDLORD,
         isTenant: user?.role?.toLowerCase() === USER_ROLES.TENANT,
-    }), [user, loading, authError, login, register, manualLogout]);
+    }), [user, loading, authError, login, register, manualLogout, loginWithGoogle]); // Added loginWithGoogle to dependencies
 
     return (
         <AuthContext.Provider value={authContextValue}>

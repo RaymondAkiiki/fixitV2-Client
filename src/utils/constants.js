@@ -120,7 +120,6 @@ export const ROUTES = {
     RESET_PASSWORD: '/reset-password/:token', // For setting new password via token
     ACCEPT_INVITE: '/invite/:token', // Public invite acceptance page
     
-
     // Public View Pages (no auth required, for external access)
     PUBLIC_REQUEST_VIEW: '/public/requests/:publicToken',
     PUBLIC_SCHEDULED_MAINTENANCE_VIEW: '/public/scheduled-maintenance/:publicToken',
@@ -148,7 +147,73 @@ export const ROUTES = {
     ADMIN_SYSTEM: '/admin/system',
     ADMIN_AUDIT_LOGS: '/admin/audit-logs',
     ADMIN_MEDIA_GALLERY: '/admin/media-gallery', // Centralized media management for admin
-
+    ADMIN_MEDIA: '/admin/media', // Alternative path used in routes
+    
+    // Admin-specific management pages
+    ADMIN_USERS: '/admin/users',
+    ADMIN_USER_DETAILS: '/admin/users/:userId',
+    ADMIN_USER_ADD: '/admin/users/add',
+    ADMIN_USER_EDIT: '/admin/users/edit/:userId',
+    
+    ADMIN_PROPERTIES: '/admin/properties',
+    ADMIN_PROPERTY_DETAILS: '/admin/properties/:propertyId',
+    ADMIN_PROPERTY_ADD: '/admin/properties/add',
+    ADMIN_PROPERTY_EDIT: '/admin/properties/edit/:propertyId',
+    
+    ADMIN_UNITS: '/admin/units',
+    ADMIN_UNIT_DETAILS: '/admin/properties/:propertyId/units/:unitId',
+    ADMIN_UNIT_LIST: '/admin/properties/:propertyId/units',
+    ADMIN_UNIT_ADD: '/admin/properties/:propertyId/units/add',
+    ADMIN_UNIT_EDIT: '/admin/properties/:propertyId/units/edit/:unitId',
+    
+    ADMIN_REQUESTS: '/admin/requests',
+    ADMIN_REQUEST_DETAILS: '/admin/requests/:requestId',
+    ADMIN_REQUEST_ADD: '/admin/requests/add',
+    ADMIN_REQUEST_EDIT: '/admin/requests/edit/:requestId',
+    
+    ADMIN_SCHEDULED_MAINTENANCE: '/admin/scheduled-maintenance',
+    ADMIN_SCHEDULED_MAINTENANCE_DETAILS: '/admin/scheduled-maintenance/:taskId',
+    ADMIN_SCHEDULED_MAINTENANCE_ADD: '/admin/scheduled-maintenance/add',
+    ADMIN_SCHEDULED_MAINTENANCE_EDIT: '/admin/scheduled-maintenance/edit/:taskId',
+    
+    ADMIN_VENDORS: '/admin/vendors',
+    ADMIN_VENDOR_DETAILS: '/admin/vendors/:vendorId',
+    ADMIN_VENDOR_ADD: '/admin/vendors/add',
+    ADMIN_VENDOR_EDIT: '/admin/vendors/edit/:vendorId',
+    
+    ADMIN_INVITES: '/admin/invites',
+    ADMIN_INVITE_SEND: '/admin/invites/send',
+    
+    ADMIN_LEASES: '/admin/leases',
+    ADMIN_LEASE_DETAILS: '/admin/leases/:leaseId',
+    ADMIN_LEASE_ADD: '/admin/leases/add',
+    ADMIN_LEASE_EDIT: '/admin/leases/edit/:leaseId',
+    
+    ADMIN_PAYMENTS: '/admin/payments',
+    ADMIN_PAYMENT_DETAILS: '/admin/payments/:paymentId',
+    ADMIN_PAYMENT_RECORD: '/admin/payments/record',
+    
+    ADMIN_MESSAGES: '/admin/messages',
+    ADMIN_MESSAGE_DETAILS: '/admin/messages/:messageId',
+    ADMIN_MESSAGE_COMPOSE: '/admin/messages/compose',
+    
+    ADMIN_NOTIFICATIONS: '/admin/notifications',
+    
+    ADMIN_ONBOARDING: '/admin/onboarding',
+    ADMIN_ONBOARDING_DETAILS: '/admin/onboarding/:onboardingId',
+    ADMIN_ONBOARDING_ADD: '/admin/onboarding/add',
+    ADMIN_ONBOARDING_EDIT: '/admin/onboarding/edit/:onboardingId',
+    
+    ADMIN_REPORTS: '/admin/reports',
+    ADMIN_REPORTS_MAINTENANCE: '/admin/reports/maintenance',
+    ADMIN_REPORTS_SCHEDULED_MAINTENANCE: '/admin/reports/scheduled-maintenance',
+    ADMIN_REPORTS_VENDOR_PERFORMANCE: '/admin/reports/vendor-performance',
+    ADMIN_REPORTS_RENT: '/admin/reports/rent',
+    
+    // PM-specific routes
+    PM_REQUESTS: '/pm/requests',
+    PM_REPORTS: '/pm/reports',
+    
     // Shared Feature Pages (nested under relevant role base paths)
     // Users
     USERS: '/users', // Lists all users (filterable by role, property, etc.)
@@ -238,6 +303,11 @@ export const ROUTES = {
     TERMS: '/terms',
     TEST: '/test',
     TEST2: '/test2',
+    
+    // Email verification routes
+    EMAIL_VERIFICATION: '/verify-email/:token',
+    EMAIL_VERIFIED_SUCCESS: '/email-verified-success',
+    RESEND_VERIFICATION: '/resend-verification',
 };
 
 // Other general constants

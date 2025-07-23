@@ -6,14 +6,8 @@ import { Home, Users, Wrench, Building2, FileText, DollarSign, CalendarDays } fr
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
 
-// Service Imports
-import { getAllProperties } from '../../services/propertyService.js';
-import { getAllRequests } from '../../services/requestService.js';
-import { getAllUsers } from '../../services/userService.js';
-import { getCommonIssuesReport } from '../../services/reportService.js';
-import { getLeases } from '../../services/leaseService.js';
-import { getRentEntries } from '../../services/rentService.js';
-import { getAllScheduledMaintenance } from '../../services/scheduledMaintenanceService.js';
+// Import the new DashboardService
+import DashboardService from '../../services/DashboardService.js';
 
 // Component Imports
 import StatCard from '../../components/StatCard.jsx';
@@ -77,115 +71,87 @@ const PaymentStatusBadge = ({ status }) => {
   }
 };
 
-
 const PMDashboardPage = () => {
-  const [stats, setStats] = useState({
-    properties: 0,
-    units: 0,
-    tenants: 0,
-    openRequests: 0,
-    activeLeases: 0,
-    upcomingRentDue: 0,
-    upcomingMaintenance: 0
+  // State for combined dashboard data
+  const [dashboardData, setDashboardData] = useState({
+    stats: {
+      properties: 0,
+      units: 0,
+      tenants: 0,
+      openRequests: 0,
+      activeLeases: 0,
+      upcomingRentDue: 0,
+      upcomingMaintenance: 0
+    },
+    recentRequests: [],
+    commonIssues: [],
+    recentLeases: [],
+    recentRents: [],
+    upcomingMaintenanceTasks: []
   });
-  const [recentRequests, setRecentRequests] = useState([]);
-  const [commonIssues, setCommonIssues] = useState([]);
-  const [recentLeases, setRecentLeases] = useState([]);
-  const [recentRents, setRecentRents] = useState([]);
-  const [upcomingMaintenanceTasks, setUpcomingMaintenanceTasks] = useState([]);
-
+  
+  // State for loading and sections
   const [loading, setLoading] = useState(true);
+  const [detailedSectionsLoading, setDetailedSectionsLoading] = useState({
+    leases: false,
+    rents: false,
+    maintenance: false
+  });
+  
   const { user } = useAuth();
   const { showError } = useGlobalAlert();
 
-  const fetchDashboardData = useCallback(async () => {
+  // Function to fetch main dashboard data - now using a single API call!
+  const fetchDashboardData = useCallback(async (signal) => {
     if (!user) {
       setLoading(false);
       return;
     }
+    
     setLoading(true);
     try {
-      const [
-        propertiesRes,
-        requestsRes,
-        commonIssuesRes,
-        allUsersRes,
-        leasesRes,
-        rentsRes,
-        scheduledMaintenanceRes
-      ] = await Promise.all([
-        getAllProperties(),
-        getAllRequests({ limit: 5, sort: '-createdAt' }),
-        getCommonIssuesReport({ limit: 3 }),
-        getAllUsers({ role: 'tenant' }),
-        getLeases(),
-        getRentEntries(),
-        getAllScheduledMaintenance(),
-      ]);
-
-      const properties = Array.isArray(propertiesRes) ? propertiesRes : (propertiesRes?.properties || propertiesRes?.data || []);
-      const requestsArray = Array.isArray(requestsRes) ? requestsRes : (requestsRes?.requests || requestsRes?.data || []);
-      const commonIssuesArray = Array.isArray(commonIssuesRes) ? commonIssuesRes : (commonIssuesRes?.issues || commonIssuesRes?.data || []);
-      const allTenants = Array.isArray(allUsersRes) ? allUsersRes : (allUsersRes?.users || allUsersRes?.data || []);
-      const leasesArray = Array.isArray(leasesRes) ? leasesRes : (leasesRes?.leases || leasesRes?.data || []);
-      const rentsArray = Array.isArray(rentsRes) ? rentsRes : (rentsRes?.rents || rentsRes?.data || []);
-      const scheduledMaintenanceArray = Array.isArray(scheduledMaintenanceRes) ? scheduledMaintenanceRes : (scheduledMaintenanceRes?.tasks || scheduledMaintenanceRes?.data || []);
-
-      const totalUnits = properties.reduce((acc, prop) => acc + (prop.units?.length || 0), 0);
-
-      const openRequestsCount = requestsArray.filter(
-        r => ![REQUEST_STATUSES.COMPLETED, REQUEST_STATUSES.VERIFIED, REQUEST_STATUSES.CANCELED, REQUEST_STATUSES.ARCHIVED].includes((r.status || '').toLowerCase())
-      ).length;
-
-      const pmPropertyIds = new Set(properties.map(p => p._id));
-      const associatedTenantsCount = allTenants.filter(tenant =>
-        tenant.associations?.tenancies?.some(tenancy => pmPropertyIds.has(tenancy.property?._id))
-      ).length;
-
-      const activeLeasesCount = leasesArray.filter(
-        lease => lease.status === LEASE_STATUS_ENUM.ACTIVE
-      ).length;
-
-      const upcomingRentDueCount = rentsArray.filter(
-        rent => [RENT_STATUS_ENUM.DUE, RENT_STATUS_ENUM.OVERDUE].includes(rent.paymentStatus)
-      ).length;
-
-      const upcomingMaintenance = scheduledMaintenanceArray
-        .filter(task => new Date(task.scheduledDate) > new Date() && task.status !== SCHEDULED_MAINTENANCE_STATUS_ENUM.COMPLETED && task.status !== SCHEDULED_MAINTENANCE_STATUS_ENUM.CANCELED)
-        .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
-
-      setStats({
-        properties: properties.length,
-        units: totalUnits,
-        tenants: associatedTenantsCount,
-        openRequests: openRequestsCount,
-        activeLeases: activeLeasesCount,
-        upcomingRentDue: upcomingRentDueCount,
-        upcomingMaintenance: upcomingMaintenance.length
-      });
-
-      setRecentRequests(requestsArray);
-      setCommonIssues(commonIssuesArray);
-      setRecentLeases(leasesArray.slice(0, 5));
-      setRecentRents(rentsArray.slice(0, 5));
-      setUpcomingMaintenanceTasks(upcomingMaintenance.slice(0, 5));
-
+      // Single API call to get all essential dashboard data
+      const data = await DashboardService.fetchPMDashboardData(signal);
+      setDashboardData(data);
     } catch (err) {
       showError('Failed to load dashboard data. Please try again.');
       console.error("Property Manager Dashboard Data Fetch Error:", err);
-      setStats({ properties: 0, units: 0, tenants: 0, openRequests: 0, activeLeases: 0, upcomingRentDue: 0, upcomingMaintenance: 0 });
-      setRecentRequests([]);
-      setCommonIssues([]);
-      setRecentLeases([]);
-      setRecentRents([]);
-      setUpcomingMaintenanceTasks([]);
     } finally {
       setLoading(false);
     }
   }, [user, showError]);
 
+  // Function to load additional section data when needed
+  const loadDetailedSection = useCallback(async (section, signal) => {
+    setDetailedSectionsLoading(prev => ({...prev, [section]: true}));
+    
+    try {
+      // Fetch detailed data for specific section
+      const sectionData = await DashboardService.fetchDashboardSection(section, {}, signal);
+      
+      // Update only the specific section in our dashboard data
+      setDashboardData(prev => ({
+        ...prev,
+        [section === 'leases' ? 'recentLeases' : 
+         section === 'rents' ? 'recentRents' : 
+         section === 'maintenance' ? 'upcomingMaintenanceTasks' : section]: sectionData
+      }));
+    } catch (err) {
+      showError(`Failed to load ${section} data. Please try again.`);
+      console.error(`Error loading ${section} data:`, err);
+    } finally {
+      setDetailedSectionsLoading(prev => ({...prev, [section]: false}));
+    }
+  }, [showError]);
+
+  // Initial data load
   useEffect(() => {
-    fetchDashboardData();
+    const controller = new AbortController();
+    fetchDashboardData(controller.signal);
+    
+    return () => {
+      controller.abort();
+    };
   }, [fetchDashboardData]);
 
   if (loading) return (
@@ -194,6 +160,16 @@ const PMDashboardPage = () => {
       <p className="text-xl text-gray-700 font-semibold">Loading Property Manager Dashboard...</p>
     </div>
   );
+
+  // Destructure data for easier use in JSX
+  const { 
+    stats, 
+    recentRequests, 
+    commonIssues, 
+    recentLeases,
+    recentRents,
+    upcomingMaintenanceTasks
+  } = dashboardData;
 
   return (
     <div className="bg-[#f8fafc] min-h-full p-6 sm:p-8">
@@ -338,12 +314,18 @@ const PMDashboardPage = () => {
           <h3 className="text-2xl font-semibold text-gray-800 flex items-center">
             <FileText className="w-6 h-6 mr-2" /> Lease Agreements
           </h3>
-          <Link
-            to={ROUTES.LEASES}
-            className="text-blue-600 hover:underline font-medium"
-          >
-            View All Leases &rarr;
-          </Link>
+          <div className="flex items-center">
+            {detailedSectionsLoading.leases && (
+              <LoadingSpinner size="sm" color={PRIMARY_COLOR} className="mr-2" />
+            )}
+            <Link
+              to={ROUTES.LEASES}
+              className="text-blue-600 hover:underline font-medium"
+              onClick={() => !recentLeases.length && loadDetailedSection('leases')}
+            >
+              View All Leases &rarr;
+            </Link>
+          </div>
         </div>
         {recentLeases.length === 0 ? (
           <p className="text-gray-600 italic">No lease agreements found.</p>
@@ -379,13 +361,13 @@ const PMDashboardPage = () => {
                       {lease.property?.name || "N/A"} / {lease.unit?.unitName || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {lease.tenant?.name || lease.tenant?.email || "N/A"}
+                      {lease.tenant?.firstName} {lease.tenant?.lastName || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {formatDate(lease.startDate)} - {formatDate(lease.endDate)}
+                      {formatDate(lease.leaseStartDate)} - {formatDate(lease.leaseEndDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      ${lease.rentAmount?.toFixed(2) || "0.00"} / {lease.rentFrequency || "N/A"}
+                      ${lease.monthlyRent?.toFixed(2) || "0.00"} / {lease.rentFrequency || "month"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       <LeaseStatusBadge status={lease.status} />
@@ -412,12 +394,18 @@ const PMDashboardPage = () => {
           <h3 className="text-2xl font-semibold text-gray-800 flex items-center">
             <DollarSign className="w-6 h-6 mr-2" /> Recent Rent Payments
           </h3>
-          <Link
-            to={ROUTES.PAYMENTS}
-            className="text-blue-600 hover:underline font-medium"
-          >
-            View All Payments &rarr;
-          </Link>
+          <div className="flex items-center">
+            {detailedSectionsLoading.rents && (
+              <LoadingSpinner size="sm" color={PRIMARY_COLOR} className="mr-2" />
+            )}
+            <Link
+              to={ROUTES.PAYMENTS}
+              className="text-blue-600 hover:underline font-medium"
+              onClick={() => !recentRents.length && loadDetailedSection('rents')}
+            >
+              View All Payments &rarr;
+            </Link>
+          </div>
         </div>
         {recentRents.length === 0 ? (
           <p className="text-gray-600 italic">No recent payment records found.</p>
@@ -456,7 +444,7 @@ const PMDashboardPage = () => {
                       {rent.property?.name || "N/A"} / {rent.unit?.unitName || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {rent.tenant?.name || rent.tenant?.email || "N/A"}
+                      {rent.tenant?.firstName} {rent.tenant?.lastName || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       ${rent.amountDue?.toFixed(2) || "0.00"}
@@ -465,10 +453,10 @@ const PMDashboardPage = () => {
                       {formatDate(rent.dueDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">
-                      <PaymentStatusBadge status={rent.paymentStatus} />
+                      <PaymentStatusBadge status={rent.status} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {rent.paidAt ? formatDateTime(rent.paidAt) : "N/A"}
+                      {rent.paymentDate ? formatDateTime(rent.paymentDate) : "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
@@ -492,12 +480,18 @@ const PMDashboardPage = () => {
           <h3 className="text-2xl font-semibold text-gray-800 flex items-center">
             <CalendarDays className="w-6 h-6 mr-2" /> Upcoming Scheduled Maintenance
           </h3>
-          <Link
-            to={ROUTES.SCHEDULED_MAINTENANCE}
-            className="text-blue-600 hover:underline font-medium"
-          >
-            View All &rarr;
-          </Link>
+          <div className="flex items-center">
+            {detailedSectionsLoading.maintenance && (
+              <LoadingSpinner size="sm" color={PRIMARY_COLOR} className="mr-2" />
+            )}
+            <Link
+              to={ROUTES.SCHEDULED_MAINTENANCE}
+              className="text-blue-600 hover:underline font-medium"
+              onClick={() => !upcomingMaintenanceTasks.length && loadDetailedSection('maintenance')}
+            >
+              View All &rarr;
+            </Link>
+          </div>
         </div>
         {upcomingMaintenanceTasks.length === 0 ? (
           <p className="text-gray-600 italic">
@@ -550,7 +544,6 @@ const PMDashboardPage = () => {
           </div>
         )}
       </div>
-
     </div>
   );
 };

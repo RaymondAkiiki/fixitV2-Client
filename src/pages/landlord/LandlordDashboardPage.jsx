@@ -2,38 +2,32 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Users, Wrench, Building2, FileText, DollarSign, CalendarDays } from 'lucide-react'; // Added icons
-import { useAuth } from '../../contexts/AuthContext.jsx'; // Ensure .jsx extension
-import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx'; // Global Alert
+import { Home, Users, Wrench, Building2, FileText, DollarSign, CalendarDays } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
 
-// Service Imports
-import { getAllProperties } from '../../services/propertyService.js';
-import { getAllRequests } from '../../services/requestService.js';
-import { getAllUsers } from '../../services/userService.js';
-import { getCommonIssuesReport } from '../../services/reportService.js';
-import { getLeases } from '../../services/leaseService.js'; // New: Lease Service
-import { getRentEntries } from '../../services/rentService.js'; // New: Rent Service
-import { getAllScheduledMaintenance } from '../../services/scheduledMaintenanceService.js'; // New: Scheduled Maintenance Service
+// Import DashboardService for optimized data fetching
+import DashboardService from '../../services/DashboardService.js';
 
 // Component Imports
-import StatCard from '../../components/StatCard.jsx'; // Reusing StatCard
-import LoadingSpinner from '../../components/common/LoadingSpinner.jsx'; // Standardized Spinner
+import StatCard from '../../components/StatCard.jsx';
+import LoadingSpinner from '../../components/common/LoadingSpinner.jsx';
 
 // Constants & Helpers
 import {
   REQUEST_STATUSES,
   LEASE_STATUS_ENUM,
-  RENT_STATUS_ENUM, // Assuming this exists in constants.js
+  RENT_STATUS_ENUM,
   SCHEDULED_MAINTENANCE_STATUS_ENUM,
   ROUTES
 } from '../../utils/constants.js';
-import { formatDate, formatDateTime } from '../../utils/helpers.js'; // Import helper functions
+import { formatDate, formatDateTime } from '../../utils/helpers.js';
 
 // Branding colors
 const PRIMARY_COLOR = '#219377';
 const SECONDARY_COLOR = '#ffbd59';
 
-// Re-usable status badge components (copied from PMDashboard for consistency)
+// Re-usable status badge components
 const StatusBadge = ({ status }) => {
   const s = (status || "").toLowerCase();
   const base = "px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide";
@@ -77,125 +71,87 @@ const PaymentStatusBadge = ({ status }) => {
   }
 };
 
-
 const LandlordDashboardPage = () => {
-  const [stats, setStats] = useState({
-    properties: 0,
-    units: 0,
-    tenants: 0,
-    openRequests: 0,
-    activeLeases: 0, // New stat
-    upcomingRentDue: 0, // New stat
-    upcomingMaintenance: 0 // New stat
+  // Combined dashboard data state
+  const [dashboardData, setDashboardData] = useState({
+    stats: {
+      properties: 0,
+      units: 0,
+      tenants: 0,
+      openRequests: 0,
+      activeLeases: 0,
+      upcomingRentDue: 0,
+      upcomingMaintenance: 0
+    },
+    recentRequests: [],
+    commonIssues: [],
+    recentLeases: [],
+    recentRents: [],
+    upcomingMaintenanceTasks: []
   });
-  const [recentRequests, setRecentRequests] = useState([]);
-  const [commonIssues, setCommonIssues] = useState([]);
-  const [recentLeases, setRecentLeases] = useState([]); // New state
-  const [recentRents, setRecentRents] = useState([]); // New state
-  const [upcomingMaintenanceTasks, setUpcomingMaintenanceTasks] = useState([]); // New state
 
+  // State for loading and sections
   const [loading, setLoading] = useState(true);
+  const [detailedSectionsLoading, setDetailedSectionsLoading] = useState({
+    leases: false,
+    rents: false,
+    maintenance: false
+  });
+
   const { user } = useAuth();
   const { showError } = useGlobalAlert();
 
+  // Function to fetch main dashboard data - now using a single API call!
   const fetchDashboardData = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
     }
+    
     setLoading(true);
     try {
-      const [
-        propertiesRes,
-        requestsRes,
-        commonIssuesRes,
-        allUsersRes, // Fetch all users to filter tenants
-        leasesRes, // Fetch leases
-        rentsRes, // Fetch rents
-        scheduledMaintenanceRes // Fetch scheduled maintenance
-      ] = await Promise.all([
-        getAllProperties(),
-        getAllRequests({ limit: 5, sort: '-createdAt' }), // Fetch recent requests
-        getCommonIssuesReport({ limit: 3 }),
-        getAllUsers({ role: 'tenant' }), // Fetch all tenants
-        getLeases(), // Fetch all leases
-        getRentEntries(), // Fetch all rents
-        getAllScheduledMaintenance(), // Fetch all scheduled maintenance
-      ]);
-
-      // Normalize API responses
-      const properties = Array.isArray(propertiesRes) ? propertiesRes : (propertiesRes?.properties || propertiesRes?.data || []);
-      const requestsArray = Array.isArray(requestsRes) ? requestsRes : (requestsRes?.requests || requestsRes?.data || []);
-      const commonIssuesArray = Array.isArray(commonIssuesRes) ? commonIssuesRes : (commonIssuesRes?.issues || commonIssuesRes?.data || []);
-      const allTenants = Array.isArray(allUsersRes) ? allUsersRes : (allUsersRes?.users || allUsersRes?.data || []);
-      const leasesArray = Array.isArray(leasesRes) ? leasesRes : (leasesRes?.leases || leasesRes?.data || []);
-      const rentsArray = Array.isArray(rentsRes) ? rentsRes : (rentsRes?.rents || rentsRes?.data || []);
-      const scheduledMaintenanceArray = Array.isArray(scheduledMaintenanceRes) ? scheduledMaintenanceRes : (scheduledMaintenanceRes?.tasks || scheduledMaintenanceRes?.data || []);
-
-
-      // Calculate total units from properties
-      const totalUnits = properties.reduce((acc, prop) => acc + (prop.units?.length || 0), 0);
-
-      // Filter requests that are considered "open"
-      const openRequestsCount = requestsArray.filter(
-        r => ![REQUEST_STATUSES.COMPLETED, REQUEST_STATUSES.VERIFIED, REQUEST_STATUSES.CANCELED, REQUEST_STATUSES.ARCHIVED].includes((r.status || '').toLowerCase())
-      ).length;
-
-      // Count tenants associated with the landlord's properties
-      const landlordPropertyIds = new Set(properties.map(p => p._id));
-      const associatedTenantsCount = allTenants.filter(tenant =>
-        tenant.associations?.tenancies?.some(tenancy => landlordPropertyIds.has(tenancy.property?._id))
-      ).length;
-
-      // Calculate active leases
-      const activeLeasesCount = leasesArray.filter(
-        lease => lease.status === LEASE_STATUS_ENUM.ACTIVE
-      ).length;
-
-      // Calculate upcoming rent due (due or overdue)
-      const upcomingRentDueCount = rentsArray.filter(
-        rent => [RENT_STATUS_ENUM.DUE, RENT_STATUS_ENUM.OVERDUE].includes(rent.paymentStatus)
-      ).length;
-
-      // Filter upcoming scheduled maintenance tasks
-      const upcomingMaintenance = scheduledMaintenanceArray
-        .filter(task => new Date(task.scheduledDate) > new Date() && task.status !== SCHEDULED_MAINTENANCE_STATUS_ENUM.COMPLETED && task.status !== SCHEDULED_MAINTENANCE_STATUS_ENUM.CANCELED)
-        .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
-
-
-      setStats({
-        properties: properties.length,
-        units: totalUnits,
-        tenants: associatedTenantsCount,
-        openRequests: openRequestsCount,
-        activeLeases: activeLeasesCount,
-        upcomingRentDue: upcomingRentDueCount,
-        upcomingMaintenance: upcomingMaintenance.length
-      });
-
-      setRecentRequests(requestsArray);
-      setCommonIssues(commonIssuesArray);
-      setRecentLeases(leasesArray.slice(0, 5)); // Show top 5 recent leases
-      setRecentRents(rentsArray.slice(0, 5)); // Show top 5 recent rents
-      setUpcomingMaintenanceTasks(upcomingMaintenance.slice(0, 5)); // Show top 5 upcoming maintenance tasks
-
+      // Single API call to get all essential dashboard data
+      const data = await DashboardService.fetchLandlordDashboardData();
+      setDashboardData(data);
     } catch (err) {
       showError('Failed to load dashboard data. Please try again.');
       console.error("Landlord Dashboard Data Fetch Error:", err);
-      // Clear all data on error
-      setStats({ properties: 0, units: 0, tenants: 0, openRequests: 0, activeLeases: 0, upcomingRentDue: 0, upcomingMaintenance: 0 });
-      setRecentRequests([]);
-      setCommonIssues([]);
-      setRecentLeases([]);
-      setRecentRents([]);
-      setUpcomingMaintenanceTasks([]);
     } finally {
       setLoading(false);
     }
   }, [user, showError]);
 
+  // Function to load additional section data when needed
+  const loadDetailedSection = useCallback(async (section) => {
+    setDetailedSectionsLoading(prev => ({...prev, [section]: true}));
+    
+    try {
+      // Fetch detailed data for specific section
+      const sectionData = await DashboardService.fetchDashboardSection(section);
+      
+      // Update only the specific section in our dashboard data
+      setDashboardData(prev => ({
+        ...prev,
+        [section === 'leases' ? 'recentLeases' : 
+         section === 'rents' ? 'recentRents' : 
+         section === 'maintenance' ? 'upcomingMaintenanceTasks' : section]: sectionData
+      }));
+    } catch (err) {
+      showError(`Failed to load ${section} data. Please try again.`);
+      console.error(`Error loading ${section} data:`, err);
+    } finally {
+      setDetailedSectionsLoading(prev => ({...prev, [section]: false}));
+    }
+  }, [showError]);
+
+  // Initial data load
   useEffect(() => {
+    const controller = new AbortController();
     fetchDashboardData();
+    
+    return () => {
+      controller.abort();
+    };
   }, [fetchDashboardData]);
 
   if (loading) return (
@@ -204,6 +160,16 @@ const LandlordDashboardPage = () => {
       <p className="text-xl text-gray-700 font-semibold">Loading Landlord Dashboard...</p>
     </div>
   );
+
+  // Destructure data for easier use in JSX
+  const { 
+    stats, 
+    recentRequests, 
+    commonIssues, 
+    recentLeases,
+    recentRents,
+    upcomingMaintenanceTasks
+  } = dashboardData;
 
   return (
     <div className="bg-[#f8fafc] min-h-full p-6 sm:p-8">
@@ -295,7 +261,9 @@ const LandlordDashboardPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{req.property?.name || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <StatusBadge status={req.status} />
+                        <span className={StatusBadge({ status: req.status })}>
+                          {req.status?.replace(/_/g, ' ') || 'N/A'}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                         {req.createdAt ? formatDate(req.createdAt) : 'N/A'}
@@ -316,7 +284,7 @@ const LandlordDashboardPage = () => {
         >
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold text-gray-800">Common Issues</h2>
-            <Link to={ROUTES.LANDLORD_REPORTS} className="text-blue-600 hover:underline font-medium">
+            <Link to={ROUTES.REPORTS} className="text-blue-600 hover:underline font-medium">
               Full Report &rarr;
             </Link>
           </div>
@@ -348,12 +316,18 @@ const LandlordDashboardPage = () => {
           <h3 className="text-2xl font-semibold text-gray-800 flex items-center">
             <FileText className="w-6 h-6 mr-2" /> Lease Agreements
           </h3>
-          <Link
-            to={ROUTES.LEASES}
-            className="text-blue-600 hover:underline font-medium"
-          >
-            View All Leases &rarr;
-          </Link>
+          <div className="flex items-center">
+            {detailedSectionsLoading.leases && (
+              <LoadingSpinner size="sm" color={PRIMARY_COLOR} className="mr-2" />
+            )}
+            <Link
+              to={ROUTES.LEASES}
+              className="text-blue-600 hover:underline font-medium"
+              onClick={() => !recentLeases.length && loadDetailedSection('leases')}
+            >
+              View All Leases &rarr;
+            </Link>
+          </div>
         </div>
         {recentLeases.length === 0 ? (
           <p className="text-gray-600 italic">No lease agreements found.</p>
@@ -389,16 +363,18 @@ const LandlordDashboardPage = () => {
                       {lease.property?.name || "N/A"} / {lease.unit?.unitName || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {lease.tenant?.name || lease.tenant?.email || "N/A"}
+                      {lease.tenant?.firstName} {lease.tenant?.lastName || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {formatDate(lease.startDate)} - {formatDate(lease.endDate)}
+                      {formatDate(lease.leaseStartDate)} - {formatDate(lease.leaseEndDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      ${lease.rentAmount?.toFixed(2) || "0.00"} / {lease.rentFrequency || "N/A"}
+                      ${lease.monthlyRent?.toFixed(2) || "0.00"} / {lease.rentFrequency || "month"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      <LeaseStatusBadge status={lease.status} />
+                      <span className={LeaseStatusBadge({ status: lease.status })}>
+                        {lease.status?.replace(/_/g, ' ') || 'N/A'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
@@ -422,12 +398,18 @@ const LandlordDashboardPage = () => {
           <h3 className="text-2xl font-semibold text-gray-800 flex items-center">
             <DollarSign className="w-6 h-6 mr-2" /> Recent Rent Payments
           </h3>
-          <Link
-            to={ROUTES.PAYMENTS}
-            className="text-blue-600 hover:underline font-medium"
-          >
-            View All Payments &rarr;
-          </Link>
+          <div className="flex items-center">
+            {detailedSectionsLoading.rents && (
+              <LoadingSpinner size="sm" color={PRIMARY_COLOR} className="mr-2" />
+            )}
+            <Link
+              to={ROUTES.PAYMENTS}
+              className="text-blue-600 hover:underline font-medium"
+              onClick={() => !recentRents.length && loadDetailedSection('rents')}
+            >
+              View All Payments &rarr;
+            </Link>
+          </div>
         </div>
         {recentRents.length === 0 ? (
           <p className="text-gray-600 italic">No recent payment records found.</p>
@@ -466,7 +448,7 @@ const LandlordDashboardPage = () => {
                       {rent.property?.name || "N/A"} / {rent.unit?.unitName || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {rent.tenant?.name || rent.tenant?.email || "N/A"}
+                      {rent.tenant?.firstName} {rent.tenant?.lastName || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       ${rent.amountDue?.toFixed(2) || "0.00"}
@@ -475,10 +457,12 @@ const LandlordDashboardPage = () => {
                       {formatDate(rent.dueDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">
-                      <PaymentStatusBadge status={rent.paymentStatus} />
+                      <span className={PaymentStatusBadge({ status: rent.status })}>
+                        {rent.status?.replace(/_/g, ' ') || 'N/A'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {rent.paidAt ? formatDateTime(rent.paidAt) : "N/A"}
+                      {rent.paymentDate ? formatDateTime(rent.paymentDate) : "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
@@ -502,12 +486,18 @@ const LandlordDashboardPage = () => {
           <h3 className="text-2xl font-semibold text-gray-800 flex items-center">
             <CalendarDays className="w-6 h-6 mr-2" /> Upcoming Scheduled Maintenance
           </h3>
-          <Link
-            to={ROUTES.SCHEDULED_MAINTENANCE}
-            className="text-blue-600 hover:underline font-medium"
-          >
-            View All &rarr;
-          </Link>
+          <div className="flex items-center">
+            {detailedSectionsLoading.maintenance && (
+              <LoadingSpinner size="sm" color={PRIMARY_COLOR} className="mr-2" />
+            )}
+            <Link
+              to={ROUTES.SCHEDULED_MAINTENANCE}
+              className="text-blue-600 hover:underline font-medium"
+              onClick={() => !upcomingMaintenanceTasks.length && loadDetailedSection('maintenance')}
+            >
+              View All &rarr;
+            </Link>
+          </div>
         </div>
         {upcomingMaintenanceTasks.length === 0 ? (
           <p className="text-gray-600 italic">
@@ -551,7 +541,9 @@ const LandlordDashboardPage = () => {
                       {formatDate(task.scheduledDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">
-                      <StatusBadge status={task.status} />
+                      <span className={StatusBadge({ status: task.status })}>
+                        {task.status?.replace(/_/g, ' ') || 'N/A'}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -560,7 +552,6 @@ const LandlordDashboardPage = () => {
           </div>
         )}
       </div>
-
     </div>
   );
 };

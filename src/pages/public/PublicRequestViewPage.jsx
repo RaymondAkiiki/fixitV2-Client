@@ -1,21 +1,23 @@
-// frontend/src/pages/public/PublicRequestViewPage.jsx
+// src/pages/public/PublicRequestViewPage.jsx
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import Button from "../../components/common/Button.jsx"; // Ensure .jsx extension
-import LoadingSpinner from "../../components/common/LoadingSpinner.jsx"; // Using LoadingSpinner
-import ConfirmationModal from "../../components/common/modals/ConfirmationModal.jsx"; // Assuming this modal exists
+import Button from "../../components/common/Button.jsx";
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
+import ConfirmationModal from "../../components/common/modals/ConfirmationModal.jsx";
 import {
-  Wrench, Building, Home, User, Package, Calendar, Clock, Image, MessageSquare, CheckCircle
+  Wrench, Building, Home, User, Package, Calendar, Clock, Image, MessageSquare, 
+  CheckCircle, Send, PaperclipIcon
 } from "lucide-react";
 
 import {
   getPublicRequestView,
   publicRequestUpdate,
-} from "../../services/publicService.js"; // Ensure .js extension
-import { useGlobalAlert } from "../../contexts/GlobalAlertContext.jsx"; // Import useGlobalAlert
-import { REQUEST_STATUSES, ROUTES } from "../../utils/constants.js"; // Import constants
-import { formatDate, formatDateTime, isImage, isVideo } from "../../utils/helpers.js"; // Import helper functions for dates and media types
+  addPublicCommentToRequest
+} from "../../services/publicService.js";
+import { useGlobalAlert } from "../../contexts/GlobalAlertContext.jsx";
+import { REQUEST_STATUSES, ROUTES } from "../../utils/constants.js";
+import { formatDate, formatDateTime, isImage, isVideo } from "../../utils/helpers.js";
 
 // -- Status & Priority Badge Components (adapted to use constants) --
 const StatusBadge = ({ status }) => {
@@ -46,13 +48,20 @@ const PriorityBadge = ({ priority }) => {
 
 function PublicRequestViewPage() {
   const { publicToken } = useParams();
-  const { showSuccess, showError } = useGlobalAlert(); // Destructure from useGlobalAlert
+  const { showSuccess, showError } = useGlobalAlert();
+  const commentInputRef = useRef(null);
 
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [statusToUpdate, setStatusToUpdate] = useState(null); // State to hold the status for confirmation
+  const [statusToUpdate, setStatusToUpdate] = useState(null);
+  
+  // Comment functionality
+  const [commentText, setCommentText] = useState("");
+  const [sendingComment, setSendingComment] = useState(false);
+  const [commentFiles, setCommentFiles] = useState([]);
+  const [commentError, setCommentError] = useState("");
 
   // Fetch request details using the public token
   const fetchRequestDetails = useCallback(async () => {
@@ -62,9 +71,9 @@ function PublicRequestViewPage() {
       const requestData = await getPublicRequestView(publicToken);
       setRequest(requestData);
     } catch (err) {
-      const message = err.response?.data?.message || "Failed to load request details. This link may be invalid, expired, or the request might not exist.";
+      const message = err.message || "Failed to load request details. This link may be invalid, expired, or the request might not exist.";
       setError(message);
-      showError(message); // Display error using global alert
+      showError(message);
       console.error("Public request details fetch error:", err);
     } finally {
       setLoading(false);
@@ -85,28 +94,79 @@ function PublicRequestViewPage() {
 
   // Function to handle the actual status update after confirmation
   const confirmUpdateStatus = async () => {
-    setShowConfirmModal(false); // Close the modal
-    if (!statusToUpdate) return; // Should not happen if initiated correctly
+    setShowConfirmModal(false);
+    if (!statusToUpdate) return;
 
-    setLoading(true); // Set loading for the action
-    setError(null); // Clear any previous errors
+    setLoading(true);
+    setError(null);
 
     try {
       await publicRequestUpdate(publicToken, { status: statusToUpdate.toLowerCase() });
       showSuccess(`Request status updated to "${statusToUpdate.replace(/_/g, ' ')}" successfully!`);
-      fetchRequestDetails(); // Refresh the request details
+      fetchRequestDetails();
     } catch (err) {
-      const message = err.response?.data?.message || `Failed to update status to "${statusToUpdate.replace(/_/g, ' ')}". Please try again.`;
+      const message = err.message || `Failed to update status to "${statusToUpdate.replace(/_/g, ' ')}". Please try again.`;
       setError(message);
-      showError(message); // Display error using global alert
+      showError(message);
       console.error("Public status update error:", err);
     } finally {
       setLoading(false);
-      setStatusToUpdate(null); // Clear the status to update
+      setStatusToUpdate(null);
     }
   };
 
-  if (loading) {
+  // Function to handle file selection for comments
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    setCommentFiles(selectedFiles);
+  };
+
+  // Function to handle comment submission
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!commentText.trim()) {
+      setCommentError("Please enter a comment.");
+      return;
+    }
+    
+    setSendingComment(true);
+    setCommentError("");
+    
+    try {
+      // Prepare the comment data
+      const commentData = {
+        message: commentText,
+        name: "External User", // This will be overridden by the backend if logged in
+      };
+      
+      // Add files if present
+      if (commentFiles.length > 0) {
+        // This would require a different API call structure or formData
+        // We'd need to extend the addPublicCommentToRequest function
+        // Simplified for now - assuming backend can handle files
+        commentData.files = commentFiles;
+      }
+      
+      await addPublicCommentToRequest(publicToken, commentData);
+      
+      // Reset form and refresh data
+      setCommentText("");
+      setCommentFiles([]);
+      showSuccess("Comment added successfully!");
+      fetchRequestDetails();
+      
+    } catch (err) {
+      const message = err.message || "Failed to add comment. Please try again.";
+      setCommentError(message);
+      showError(message);
+      console.error("Add comment error:", err);
+    } finally {
+      setSendingComment(false);
+    }
+  };
+
+  if (loading && !request) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <LoadingSpinner size="lg" color="#219377" className="mr-4" />
@@ -115,10 +175,9 @@ function PublicRequestViewPage() {
     );
   }
 
-  if (error) {
+  if (error && !request) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-8">
-        {/* Error message is already displayed via GlobalAlertContext */}
         <h3 className="text-lg font-semibold text-red-600 mb-4">Error Loading Request</h3>
         <p className="mt-2 text-center text-gray-700">{error}</p>
         <p className="mt-6 text-center text-gray-700">Please check the link or contact the property manager for assistance.</p>
@@ -132,8 +191,6 @@ function PublicRequestViewPage() {
   }
 
   if (!request) {
-    // This case should ideally be covered by the error state if fetchRequestDetails fails to get data
-    // but kept as a fallback for clarity.
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <p className="text-xl text-gray-600">Request not found.</p>
@@ -203,12 +260,11 @@ function PublicRequestViewPage() {
                   <CheckCircle className="w-5 h-5 mr-2" /> Mark Completed
                 </Button>
               )}
-              {/* Add more vendor-specific status updates if needed */}
             </div>
           </div>
         )}
 
-        {/* Media Section (View only for now) */}
+        {/* Media Section */}
         <div className="mb-10 p-6 rounded-xl bg-gray-50 border border-gray-200">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
             <Image className="w-6 h-6 mr-2 text-green-700" /> Media Files
@@ -217,7 +273,6 @@ function PublicRequestViewPage() {
             {request.media && request.media.length > 0 ? (
               request.media.map((mediaItem, index) => (
                 <div key={index} className="relative group rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-                  {/* Assuming mediaItem has a 'url' and 'mimeType' property */}
                   {isImage(mediaItem.mimeType) ? (
                     <img src={mediaItem.url} alt={`Media ${index + 1}`} className="w-full h-32 object-cover" />
                   ) : isVideo(mediaItem.mimeType) ? (
@@ -240,11 +295,13 @@ function PublicRequestViewPage() {
           </div>
         </div>
 
-        {/* Comments Section (View only) */}
+        {/* Comments Section with Add Comment functionality */}
         <div className="mb-10 p-6 rounded-xl bg-gray-50 border border-gray-200">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
             <MessageSquare className="w-6 h-6 mr-2 text-green-700" /> Comments
           </h2>
+          
+          {/* Existing Comments */}
           <div className="space-y-6 mb-6 max-h-80 overflow-y-auto pr-2">
             {request.comments && request.comments.length > 0 ? (
               request.comments.map(comment => (
@@ -260,6 +317,53 @@ function PublicRequestViewPage() {
               <p className="text-gray-600 italic">No comments yet.</p>
             )}
           </div>
+          
+          {/* Add Comment Form */}
+          <form onSubmit={handleCommentSubmit} className="mt-6">
+            <div className="mb-2">
+              <label htmlFor="comment" className="block text-sm font-medium text-gray-700">Add a comment</label>
+              <textarea
+                id="comment"
+                name="comment"
+                rows="3"
+                ref={commentInputRef}
+                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                placeholder="Type your message here..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                disabled={sendingComment}
+              ></textarea>
+              {commentError && <p className="mt-1 text-sm text-red-600">{commentError}</p>}
+            </div>
+            
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center">
+                <label htmlFor="fileInput" className="cursor-pointer flex items-center text-gray-700 hover:text-gray-900">
+                  <PaperclipIcon className="w-5 h-5 mr-1" />
+                  <span className="text-sm">
+                    {commentFiles.length > 0 ? `${commentFiles.length} file(s) selected` : "Attach files"}
+                  </span>
+                </label>
+                <input
+                  type="file"
+                  id="fileInput"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                  disabled={sendingComment}
+                />
+              </div>
+              
+              <Button
+                type="submit"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center"
+                disabled={sendingComment || !commentText.trim()}
+                loading={sendingComment}
+              >
+                <Send className="w-4 h-4 mr-2" /> {sendingComment ? "Sending..." : "Send Comment"}
+              </Button>
+            </div>
+          </form>
         </div>
 
         <p className="text-center text-gray-600 text-sm mt-8">

@@ -1,81 +1,150 @@
-import { useAuth } from "../contexts/AuthContext";
-import { Menu, Bell } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
+import { Bell, LogOut, Menu, User, Calendar } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNotifications } from '../contexts/NotificationContext';
+import useRoleBasedPath from '../hooks/useRoleBasedPath'; // Import the custom hook
 
-const Navbar = ({ toggleSidebar }) => {
+const Navbar = ({ 
+  onMenuClick, 
+  portalName, 
+  portalAccent,
+  dashboardPath,
+  portalColor = "green", // Default color theme
+  showNotifications = true 
+}) => {
   const { user, logout } = useAuth();
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [currentTime, setCurrentTime] = useState('');
+  const { basePath, getPath } = useRoleBasedPath(); // Use the custom hook
+  
+  // Safely access notifications with error handling
+  const notificationsContext = useNotifications();
+  const unreadCount = notificationsContext?.unreadCount || 0;
 
-  // Close dropdown on outside click
+  // Update current time
   useEffect(() => {
-    function handleClick(e) {
-      if (showMenu && menuRef.current && !menuRef.current.contains(e.target)) {
-        setShowMenu(false);
-      }
+    const updateTime = () => {
+      const now = new Date();
+      const formatted = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+      setCurrentTime(formatted);
+    };
+    
+    updateTime();
+    const timer = setInterval(updateTime, 60000); // Update every minute
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  // Format user display name with priority for different fields
+  const displayName = user?.firstName && user?.lastName 
+    ? `${user.firstName} ${user.lastName}`
+    : user?.name || user?.username || user?.email || 'User';
+
+  // Format role display
+  const roleDisplay = user?.role?.replace(/_/g, ' ') || '';
+  
+  // Determine color theme class based on portal
+  const colorTheme = {
+    green: {
+      brand: "text-green-700",
+      accent: "text-yellow-500",
+      notification: "text-green-700 bg-green-50 hover:bg-green-100",
+      username: "text-green-700"
+    },
+    blue: {
+      brand: "text-blue-700",
+      accent: "text-blue-400", 
+      notification: "text-blue-700 bg-blue-50 hover:bg-blue-100",
+      username: "text-blue-700"
+    },
+    purple: {
+      brand: "text-purple-700",
+      accent: "text-purple-400",
+      notification: "text-purple-700 bg-purple-50 hover:bg-purple-100",
+      username: "text-purple-700"
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [showMenu]);
+  }[portalColor] || colorTheme.green;
+
+  // Generate the correct dashboard path using the role-based path hook
+  const fullDashboardPath = getPath(dashboardPath.replace(/^\/+/, ''));
 
   return (
-    <header className="sticky top-0 z-30 bg-[#219377] shadow-md">
-      <nav className="flex items-center justify-between px-4 md:px-10 h-16">
-        {/* Sidebar Toggle (mobile only) */}
+    <header className="h-16 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 bg-white shadow-sm border-b border-gray-200">
+      {/* Left side: Hamburger for mobile and Brand for desktop */}
+      <div className="flex items-center">
         <button
-          onClick={toggleSidebar}
-          className="md:hidden text-[#ffbd59] hover:text-white focus:outline-none transition"
-          aria-label="Toggle sidebar"
+          className="md:hidden text-gray-600 mr-4 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 rounded"
+          onClick={onMenuClick}
+          aria-label="Open sidebar"
         >
-          <Menu size={28} />
+          <Menu className="h-6 w-6" />
         </button>
+        <Link 
+          to={fullDashboardPath} 
+          className="hidden md:flex items-center"
+          aria-label={`${portalName}${portalAccent} Dashboard`}
+        >
+          <span className={`font-extrabold text-xl tracking-tight ${colorTheme.brand}`}>
+            {portalName}<span className={colorTheme.accent}>{portalAccent}</span>
+          </span>
+        </Link>
+      </div>
 
-        {/* App/Page Title */}
-        <div className="text-xl md:text-2xl font-extrabold text-white tracking-tight drop-shadow-md">
-          {user?.role
-            ? user.role.replace("_", " ").replace(/(^\w|\s\w)/g, m => m.toUpperCase()) + " Panel"
-            : "Dashboard"}
+      {/* Center: Current date and time on larger screens */}
+      <div className="hidden lg:flex items-center">
+        <div className="flex items-center text-gray-500 text-sm">
+          <Calendar className="h-4 w-4 mr-2" />
+          <span>{currentTime}</span>
         </div>
+      </div>
 
-        <div className="flex items-center gap-4">
-          {/* Notifications */}
-          <button className="relative text-[#ffbd59] hover:text-white focus:outline-none transition" aria-label="Notifications">
-            <Bell size={24} />
-            {/* Example badge: */}
-            {/* <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">3</span> */}
-          </button>
-
-          {/* Profile menu */}
-          <div className="relative" ref={menuRef}>
-            <button
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 hover:bg-[#ffbd59] transition text-base font-bold text-[#219377] border-2 border-[#219377] shadow-sm"
-              onClick={() => setShowMenu((v) => !v)}
-              aria-haspopup="menu"
-              aria-expanded={showMenu}
-            >
-              <span className="hidden sm:inline">{user?.name || "User"}</span>
-              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#ffbd59] text-[#219377] font-extrabold uppercase shadow-md">
-                {user?.name?.[0] || "U"}
+      {/* Right: Actions */}
+      <div className="flex items-center space-x-3 sm:space-x-4">
+        {showNotifications && (
+          <Link
+            to={getPath('notifications')} // Use getPath for correct role-based path
+            className={`relative p-2 rounded-full transition-colors ${colorTheme.notification}`}
+            title="Notifications"
+            aria-label={`${unreadCount} unread notifications`}
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center" aria-hidden="true">
+                {unreadCount > 9 ? '9+' : unreadCount}
               </span>
-            </button>
-            {showMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-[#21937722] z-50 animate-fade-in" role="menu">
-                <div className="px-4 py-3 border-b">
-                  <div className="font-semibold text-base text-[#219377]">{user?.name}</div>
-                  <div className="text-xs text-gray-500">{user?.role?.replace("_", " ")}</div>
-                </div>
-                <button
-                  onClick={logout}
-                  className="block w-full text-left px-4 py-2 text-base text-rose-600 hover:bg-rose-50"
-                  role="menuitem"
-                >
-                  Logout
-                </button>
-              </div>
             )}
+          </Link>
+        )}
+        <div className="w-px h-8 bg-gray-200 hidden sm:block" aria-hidden="true" />
+        <div className="flex items-center">
+          <div className="text-right mr-2 sm:mr-3 hidden xs:block">
+            <p className={`text-sm font-semibold ${colorTheme.username} truncate max-w-[120px] sm:max-w-[160px]`}>
+              {displayName}
+            </p>
+            <p className="text-xs capitalize text-gray-600">
+              {roleDisplay}
+            </p>
           </div>
+          <div className="hidden xs:flex h-8 w-8 rounded-full bg-gray-200 items-center justify-center mr-2">
+            <User className="h-5 w-5 text-gray-500" />
+          </div>
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-full text-red-600 bg-red-50 hover:bg-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400"
+            title="Logout"
+            aria-label="Logout"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
-      </nav>
+      </div>
     </header>
   );
 };

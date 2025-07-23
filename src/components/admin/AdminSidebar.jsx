@@ -23,7 +23,7 @@ const navLinks = [
   { to: "/admin/onboarding", label: "Onboarding", icon: <ClipboardList size={20} /> },
   { to: "/admin/reports", label: "Reports", icon: <BarChart3 size={20} /> },
   { to: "/admin/audit-logs", label: "Audit Logs", icon: <History size={20} /> },
-  { to: "/admin/media-gallery", label: "Media Gallery", icon: <Image size={20} /> },
+  { to: "/admin/media", label: "Media Gallery", icon: <Image size={20} /> },
   { to: "/admin/system", label: "System Health", icon: <ShieldCheck size={20} /> },
 ];
 

@@ -1,14 +1,86 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fixit By Threalty</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    
+    <!-- Primary Meta Tags -->
+    <title>Fixit By Threalty | Property Management Solution</title>
+    <meta name="title" content="Fixit By Threalty | Property Management Solution">
+    <meta name="description" content="Comprehensive property management platform for landlords, property managers, and tenants. Manage properties, leases, maintenance requests, rent collection, and more in one centralized system.">
+    <meta name="keywords" content="property management, real estate, tenant portal, maintenance requests, rent collection, lease management, property management software, landlord tools">
+    <meta name="author" content="Threalty">
+    <meta name="application-name" content="Fixit By Threalty">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#4f46e5">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://fixit.threalty.com/">
+    <meta property="og:title" content="Fixit By Threalty | Property Management Solution">
+    <meta property="og:description" content="Comprehensive property management platform for landlords, property managers, and tenants. Manage properties, leases, maintenance requests, rent collection, and more in one centralized system.">
+    <meta property="og:image" content="/images/fixit-og-image.png">
+    <meta property="og:site_name" content="Fixit By Threalty">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://app.fixit.threaltyservices.com/">
+    <meta property="twitter:title" content="Fixit By Threalty | Property Management Solution">
+    <meta property="twitter:description" content="Comprehensive property management platform for landlords, property managers, and tenants. Manage properties, leases, maintenance requests, rent collection, and more.">
+    <meta property="twitter:image" content="/images/fixit-twitter-image.png">
+    
+    <!-- Favicons -->
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#4f46e5">
+    
+    <!-- Preconnect to origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/images/logo.svg" as="image">
+    
+    <!-- Font stylesheets -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Structured data for SEO -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Fixit By Threalty",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Comprehensive property management platform for landlords, property managers, and tenants."
+      }
+    </script>
+    
+    <!-- Analytics placeholder (replace with your actual analytics code) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
   </head>
   <body>
+    <noscript>
+      <strong>We're sorry but Fixit By Threalty doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+    </noscript>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script> <!-- ✅ This points to your main React entry -->
+    <!-- Modal portal for React portals -->
+    <div id="modal-root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

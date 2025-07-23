@@ -1,137 +1,443 @@
 // client/src/services/onboardingService.js
 
 import api from "../api/axios.js";
+import axios from "axios";
+import { extractApiResponse, logApiResponse } from "../utils/apiUtils.js";
 
+const SERVICE_NAME = 'onboardingService';
 const ONBOARDING_BASE_URL = '/onboarding';
 
 /**
- * Creates a new onboarding entry, potentially with file uploads.
- * @param {object} data - Onboarding data. Includes `documentFile` if a file is being uploaded.
- * @returns {Promise<object>} The created onboarding entry.
+ * Formats an onboarding document with additional display properties
+ * @param {object} document - The onboarding document to format
+ * @returns {object} Formatted onboarding document
  */
-export const createOnboarding = async (data) => {
+export const formatOnboardingDocument = (document) => {
+    if (!document) return null;
+    
+    return {
+        ...document,
+        formattedCreatedAt: document.createdAt ? new Date(document.createdAt).toLocaleDateString() : 'N/A',
+        formattedCompletedAt: document.completedAt ? new Date(document.completedAt).toLocaleDateString() : 'N/A',
+        statusClass: document.isCompleted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800',
+        statusDisplay: document.isCompleted ? 'Completed' : 'Pending',
+        creatorName: document.createdBy ? 
+            `${document.createdBy.firstName || ''} ${document.createdBy.lastName || ''}`.trim() : 
+            'Unknown',
+        propertyName: document.property?.name || 'All Properties',
+        unitName: document.unit?.unitName || 'All Units',
+        tenantName: document.tenant ? 
+            `${document.tenant.firstName || ''} ${document.tenant.lastName || ''}`.trim() : 
+            'All Tenants',
+        visibilityDisplay: getVisibilityDisplay(document.visibility),
+        categoryDisplay: getCategoryDisplay(document.category),
+        mediaUrl: document.media?.url || null,
+        fileName: document.media?.originalname || document.media?.filename || 'Document'
+    };
+};
+
+/**
+ * Gets display text for visibility setting
+ * @param {string} visibility - Visibility setting
+ * @returns {string} Display text
+ */
+const getVisibilityDisplay = (visibility) => {
+    switch (visibility?.toLowerCase()) {
+        case 'all_tenants':
+            return 'All Tenants';
+        case 'property_tenants':
+            return 'Property Tenants';
+        case 'unit_tenants':
+            return 'Unit Tenants';
+        case 'specific_tenant':
+            return 'Specific Tenant';
+        default:
+            return visibility ? visibility.charAt(0).toUpperCase() + visibility.slice(1).replace(/_/g, ' ') : 'Unknown';
+    }
+};
+
+/**
+ * Gets display text for document category
+ * @param {string} category - Document category
+ * @returns {string} Display text
+ */
+const getCategoryDisplay = (category) => {
+    switch (category?.toLowerCase()) {
+        case 'sop':
+            return 'Standard Operating Procedure';
+        case 'training':
+            return 'Training Material';
+        case 'guidelines':
+            return 'Guidelines';
+        case 'policy':
+            return 'Policy Document';
+        case 'welcome':
+            return 'Welcome Package';
+        default:
+            return category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Unknown';
+    }
+};
+
+/**
+ * Creates a new onboarding document
+ * @param {object} documentData - Document data
+ * @param {string} documentData.title - Title
+ * @param {string} [documentData.description] - Description
+ * @param {string} documentData.category - Category
+ * @param {string} documentData.visibility - Visibility setting
+ * @param {string} [documentData.propertyId] - Property ID
+ * @param {string} [documentData.unitId] - Unit ID
+ * @param {string} [documentData.tenantId] - Tenant ID
+ * @param {File} documentData.documentFile - Document file
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<object>} Created onboarding document
+ * @throws {Error} If request fails
+ */
+export const createOnboarding = async (documentData, signal) => {
     try {
         const formData = new FormData();
-        for (const key in data) {
-            if (Array.isArray(data[key])) {
-                data[key].forEach(item => formData.append(`${key}[]`, item));
-            } else if (data[key] instanceof File) {
-                formData.append('documentFile', data[key]); // Corrected field name to 'documentFile'
-            } else {
-                formData.append(key, data[key]);
+        
+        // Add all fields to form data
+        for (const key in documentData) {
+            if (key === 'documentFile') {
+                if (documentData[key] instanceof File) {
+                    formData.append('documentFile', documentData[key]);
+                }
+            } else if (Array.isArray(documentData[key])) {
+                documentData[key].forEach(item => {
+                    if (item !== undefined && item !== null) {
+                        formData.append(`${key}[]`, item);
+                    }
+                });
+            } else if (documentData[key] !== undefined && documentData[key] !== null) {
+                formData.append(key, documentData[key]);
             }
         }
+        
+        // Ensure file is included
+        if (!formData.has('documentFile')) {
+            throw new Error('Document file is required');
+        }
+        
         const res = await api.post(ONBOARDING_BASE_URL, formData, {
             headers: { "Content-Type": "multipart/form-data" },
+            signal
         });
-        return res.data;
+        
+        const { data, meta } = extractApiResponse(res.data);
+        
+        logApiResponse(SERVICE_NAME, 'createOnboarding', { 
+            success: meta.success, 
+            data: formatOnboardingDocument(data)
+        });
+        
+        return {
+            success: meta.success,
+            message: meta.message,
+            data: formatOnboardingDocument(data)
+        };
     } catch (error) {
-        console.error("createOnboarding error:", error.response?.data || error.message);
+        if (axios.isCancel(error)) {
+            console.log('Request was canceled', error.message);
+            throw new Error("Request canceled");
+        }
+        
+        console.error("Error creating onboarding document:", error);
         throw error.response?.data?.message || error.message;
     }
 };
 
 /**
- * Retrieves onboarding entries, with optional filtering.
- * @param {object} [params={}] - Query parameters for filtering.
- * @returns {Promise<object[]>} An array of onboarding entries.
+ * Gets onboarding documents with filtering and pagination
+ * @param {object} [params={}] - Query parameters
+ * @param {string} [params.category] - Filter by category
+ * @param {string} [params.propertyId] - Filter by property
+ * @param {string} [params.unitId] - Filter by unit
+ * @param {number} [params.page=1] - Page number
+ * @param {number} [params.limit=10] - Items per page
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<object>} Paginated onboarding documents with formatted data
+ * @throws {Error} If request fails
  */
-export const getOnboarding = async (params = {}) => {
+export const getOnboarding = async (params = {}, signal) => {
     try {
-        const res = await api.get(ONBOARDING_BASE_URL, { params });
-        return res.data;
+        const res = await api.get(ONBOARDING_BASE_URL, { 
+            params,
+            signal
+        });
+        
+        const { data, meta } = extractApiResponse(res.data);
+        
+        // Format documents if available
+        const formattedDocuments = Array.isArray(data) 
+            ? data.map(doc => formatOnboardingDocument(doc)) 
+            : [];
+        
+        logApiResponse(SERVICE_NAME, 'getOnboarding', { 
+            documents: formattedDocuments, 
+            page: meta.page,
+            limit: meta.limit,
+            total: meta.total
+        });
+        
+        return {
+            data: formattedDocuments,
+            total: meta.total || 0,
+            page: meta.page || 1,
+            limit: meta.limit || 10,
+            pages: meta.pages || Math.ceil((meta.total || 0) / (meta.limit || 10))
+        };
     } catch (error) {
-        console.error("getOnboarding error:", error.response?.data || error.message);
+        if (axios.isCancel(error)) {
+            console.log('Request was canceled', error.message);
+            throw new Error("Request canceled");
+        }
+        
+        console.error("Error fetching onboarding documents:", error);
         throw error.response?.data?.message || error.message;
     }
 };
 
 /**
- * Retrieves a specific onboarding entry by ID.
- * @param {string} onboardingId - The ID of the onboarding entry.
- * @returns {Promise<object>} The onboarding entry object.
+ * Gets a specific onboarding document by ID
+ * @param {string} documentId - Onboarding document ID
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<object>} Onboarding document details
+ * @throws {Error} If request fails
  */
-export const getOnboardingById = async (onboardingId) => {
+export const getOnboardingById = async (documentId, signal) => {
     try {
-        const res = await api.get(`${ONBOARDING_BASE_URL}/${onboardingId}`);
-        return res.data;
+        const res = await api.get(`${ONBOARDING_BASE_URL}/${documentId}`, { signal });
+        const { data } = extractApiResponse(res.data);
+        
+        // Format document
+        const formattedDocument = formatOnboardingDocument(data);
+        
+        logApiResponse(SERVICE_NAME, 'getOnboardingById', { document: formattedDocument });
+        
+        return formattedDocument;
     } catch (error) {
-        console.error("getOnboardingById error:", error.response?.data || error.message);
+        if (axios.isCancel(error)) {
+            console.log('Request was canceled', error.message);
+            throw new Error("Request canceled");
+        }
+        
+        console.error("Error fetching onboarding document:", error);
         throw error.response?.data?.message || error.message;
     }
 };
 
 /**
- * Updates a specific onboarding entry, potentially with file uploads.
- * @param {string} onboardingId - The ID of the onboarding entry to update.
- * @param {object} updates - The updates to apply. Includes `documentFile` if a file is being replaced.
- * @returns {Promise<object>} The updated onboarding entry.
+ * Updates an onboarding document
+ * @param {string} documentId - Onboarding document ID
+ * @param {object} updateData - Update data
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<object>} Updated onboarding document
+ * @throws {Error} If request fails
  */
-export const updateOnboarding = async (onboardingId, updates) => {
+export const updateOnboarding = async (documentId, updateData, signal) => {
     try {
+        // For regular updates without file
+        if (!updateData.documentFile) {
+            const res = await api.put(`${ONBOARDING_BASE_URL}/${documentId}`, updateData, { signal });
+            const { data, meta } = extractApiResponse(res.data);
+            
+            const formattedDocument = formatOnboardingDocument(data);
+            
+            logApiResponse(SERVICE_NAME, 'updateOnboarding', { 
+                success: meta.success, 
+                document: formattedDocument 
+            });
+            
+            return {
+                success: meta.success,
+                message: meta.message,
+                data: formattedDocument
+            };
+        }
+        
+        // For updates with file upload
         const formData = new FormData();
-        for (const key in updates) {
-            if (Array.isArray(updates[key])) {
-                updates[key].forEach(item => formData.append(`${key}[]`, item));
-            } else if (updates[key] instanceof File) {
-                formData.append('documentFile', updates[key]); // Corrected field name to 'documentFile'
-            } else {
-                formData.append(key, updates[key]);
+        
+        // Add all fields to form data
+        for (const key in updateData) {
+            if (key === 'documentFile') {
+                if (updateData[key] instanceof File) {
+                    formData.append('documentFile', updateData[key]);
+                }
+            } else if (Array.isArray(updateData[key])) {
+                updateData[key].forEach(item => {
+                    if (item !== undefined && item !== null) {
+                        formData.append(`${key}[]`, item);
+                    }
+                });
+            } else if (updateData[key] !== undefined && updateData[key] !== null) {
+                formData.append(key, updateData[key]);
             }
         }
-        const res = await api.put(`${ONBOARDING_BASE_URL}/${onboardingId}`, formData, {
+        
+        const res = await api.put(`${ONBOARDING_BASE_URL}/${documentId}`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
+            signal
         });
-        return res.data;
-    } catch (error) {
-        console.error("updateOnboarding error:", error.response?.data || error.message);
-        throw error.response?.data?.message || error.message;
-    }
-};
-
-/**
- * Deletes a specific onboarding entry.
- * @param {string} onboardingId - The ID of the onboarding entry to delete.
- * @returns {Promise<object>} Success message.
- */
-export const deleteOnboarding = async (onboardingId) => {
-    try {
-        const res = await api.delete(`${ONBOARDING_BASE_URL}/${onboardingId}`);
-        return res.data;
-    } catch (error) {
-        console.error("deleteOnboarding error:", error.response?.data || error.message);
-        throw error.response?.data?.message || error.message;
-    }
-};
-
-/**
- * Marks an onboarding document as completed by a tenant.
- * @param {string} onboardingId - The ID of the onboarding document.
- * @returns {Promise<object>} Updated onboarding document.
- */
-export const markOnboardingCompleted = async (onboardingId) => {
-    try {
-        const res = await api.patch(`${ONBOARDING_BASE_URL}/${onboardingId}/complete`);
-        return res.data;
-    } catch (error) {
-        console.error("markOnboardingCompleted error:", error.response?.data || error.message);
-        throw error.response?.data?.message || error.message;
-    }
-};
-
-/**
- * Gets download URL for an onboarding document.
- * @param {string} onboardingId - The ID of the onboarding document.
- * @returns {Promise<Blob>} The document as a Blob.
- */
-export const getOnboardingDocumentDownloadUrl = async (onboardingId) => {
-    try {
-        const res = await api.get(`${ONBOARDING_BASE_URL}/${onboardingId}/download`, {
-            responseType: 'blob', // Important for file downloads
+        
+        const { data, meta } = extractApiResponse(res.data);
+        const formattedDocument = formatOnboardingDocument(data);
+        
+        logApiResponse(SERVICE_NAME, 'updateOnboarding', { 
+            success: meta.success, 
+            document: formattedDocument 
         });
-        return res.data;
+        
+        return {
+            success: meta.success,
+            message: meta.message,
+            data: formattedDocument
+        };
     } catch (error) {
-        console.error("getOnboardingDocumentDownloadUrl error:", error.response?.data || error.message);
+        if (axios.isCancel(error)) {
+            console.log('Request was canceled', error.message);
+            throw new Error("Request canceled");
+        }
+        
+        console.error("Error updating onboarding document:", error);
         throw error.response?.data?.message || error.message;
     }
+};
+
+/**
+ * Deletes an onboarding document
+ * @param {string} documentId - Onboarding document ID
+ * @returns {Promise<object>} Success message
+ * @throws {Error} If request fails
+ */
+export const deleteOnboarding = async (documentId) => {
+    try {
+        const res = await api.delete(`${ONBOARDING_BASE_URL}/${documentId}`);
+        const response = extractApiResponse(res.data);
+        
+        logApiResponse(SERVICE_NAME, 'deleteOnboarding', { 
+            success: response.meta.success, 
+            message: response.meta.message 
+        });
+        
+        return {
+            success: response.meta.success,
+            message: response.meta.message
+        };
+    } catch (error) {
+        console.error("Error deleting onboarding document:", error);
+        throw error.response?.data?.message || error.message;
+    }
+};
+
+/**
+ * Marks an onboarding document as completed
+ * @param {string} documentId - Onboarding document ID
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<object>} Updated onboarding document
+ * @throws {Error} If request fails
+ */
+export const markOnboardingCompleted = async (documentId, signal) => {
+    try {
+        const res = await api.patch(`${ONBOARDING_BASE_URL}/${documentId}/complete`, {}, { signal });
+        const { data, meta } = extractApiResponse(res.data);
+        
+        // Format document
+        const formattedDocument = formatOnboardingDocument(data);
+        
+        logApiResponse(SERVICE_NAME, 'markOnboardingCompleted', { 
+            success: meta.success, 
+            document: formattedDocument 
+        });
+        
+        return {
+            success: meta.success,
+            message: meta.message,
+            data: formattedDocument
+        };
+    } catch (error) {
+        if (axios.isCancel(error)) {
+            console.log('Request was canceled', error.message);
+            throw new Error("Request canceled");
+        }
+        
+        console.error("Error marking onboarding document as completed:", error);
+        throw error.response?.data?.message || error.message;
+    }
+};
+
+/**
+ * Gets download info for an onboarding document
+ * @param {string} documentId - Onboarding document ID
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<object>} Download info
+ * @throws {Error} If request fails
+ */
+export const getOnboardingDocumentDownloadInfo = async (documentId, signal) => {
+    try {
+        const res = await api.get(`${ONBOARDING_BASE_URL}/${documentId}/download`, { signal });
+        const { data } = extractApiResponse(res.data);
+        
+        logApiResponse(SERVICE_NAME, 'getOnboardingDocumentDownloadInfo', { 
+            downloadUrl: data.downloadUrl,
+            fileName: data.fileName
+        });
+        
+        return data;
+    } catch (error) {
+        if (axios.isCancel(error)) {
+            console.log('Request was canceled', error.message);
+            throw new Error("Request canceled");
+        }
+        
+        console.error("Error getting document download info:", error);
+        throw error.response?.data?.message || error.message;
+    }
+};
+
+/**
+ * Downloads an onboarding document
+ * @param {string} downloadUrl - Download URL
+ * @param {string} fileName - File name
+ * @returns {Promise<void>} Initiates file download
+ * @throws {Error} If download fails
+ */
+export const downloadOnboardingDocument = async (downloadUrl, fileName) => {
+    try {
+        // Create a temporary link element
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.target = '_blank';
+        link.download = fileName || 'onboarding-document';
+        link.rel = 'noopener noreferrer';
+        
+        // Trigger click to start download
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up
+        setTimeout(() => {
+            document.body.removeChild(link);
+        }, 100);
+        
+        logApiResponse(SERVICE_NAME, 'downloadOnboardingDocument', { success: true, fileName });
+        
+        return { success: true };
+    } catch (error) {
+        console.error("Error downloading document:", error);
+        throw new Error(`Failed to download document: ${error.message}`);
+    }
+};
+
+export default {
+    formatOnboardingDocument,
+    createOnboarding,
+    getOnboarding,
+    getOnboardingById,
+    updateOnboarding,
+    deleteOnboarding,
+    markOnboardingCompleted,
+    getOnboardingDocumentDownloadInfo,
+    downloadOnboardingDocument
 };

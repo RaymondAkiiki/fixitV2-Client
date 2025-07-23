@@ -1,30 +1,33 @@
 // frontend/src/pages/tenant/TenantDashboardPage.jsx
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Home, Wrench, Bell, FileText, DollarSign, PlusCircle, Star, CalendarDays,
-} from "lucide-react"; // Added icons for various sections
+  Home, Wrench, Bell, FileText, DollarSign, PlusCircle, CalendarDays,
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
-import { getAllRequests, submitFeedback } from "../../services/requestService.js"; // Ensure .js extension
-import { getMyProfile } from "../../services/userService.js"; // Ensure .js extension
-import { getAllNotifications } from "../../services/notificationService.js"; // Ensure .js extension
-import { getAllProperties } from "../../services/propertyService.js"; // Ensure .js extension
-import { getAllScheduledMaintenance } from "../../services/scheduledMaintenanceService.js"; // Ensure .js extension
-import { getLeases } from "../../services/leaseService.js"; // Assuming this service exists
-import { getRentEntries } from "../../services/rentService.js"; // Assuming this service exists
+// Import hooks and services
+import { useAuth } from "../../contexts/AuthContext.jsx";
+import { useGlobalAlert } from "../../contexts/GlobalAlertContext.jsx";
+import { useRents } from "../../hooks/useRents.js";
+import { useLeases } from "../../hooks/useLeases.js";
+import { useProperties } from "../../hooks/useProperties.js";
+import * as userService from "../../services/userService.js";
+import * as requestService from "../../services/requestService.js";
+import * as notificationService from "../../services/notificationService.js";
+import * as scheduledMaintenanceService from "../../services/scheduledMaintenanceService.js";
 
-import Modal from "../../components/common/Modal.jsx"; // Ensure .jsx extension
-import Button from "../../components/common/Button.jsx"; // Ensure .jsx extension
-import LoadingSpinner from "../../components/common/LoadingSpinner.jsx"; // Using LoadingSpinner
-import { useGlobalAlert } from "../../contexts/GlobalAlertContext.jsx"; // Import useGlobalAlert
+import Modal from "../../components/common/Modal.jsx";
+import Button from "../../components/common/Button.jsx";
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 import {
   ROUTES,
   REQUEST_STATUSES,
   SCHEDULED_MAINTENANCE_STATUS_ENUM,
   LEASE_STATUS_ENUM,
-} from "../../utils/constants.js"; // Import constants
-import { formatDate, formatDateTime } from "../../utils/helpers.js"; // Import helper functions
+} from "../../utils/constants.js";
+import { formatDate, formatDateTime } from "../../utils/helpers.js";
 
 // Re-using StatusBadge from PublicRequestViewPage for consistency
 const StatusBadge = ({ status }) => {
@@ -58,17 +61,8 @@ const LeaseStatusBadge = ({ status }) => {
   }
 };
 
-
 export default function TenantDashboard() {
-  const [profile, setProfile] = useState(null);
-  const [requests, setRequests] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [myProperties, setMyProperties] = useState([]); // Tenant might be associated with multiple properties/units
-  const [upcomingMaintenance, setUpcomingMaintenance] = useState([]);
-  const [leases, setLeases] = useState([]);
-  const [rents, setRents] = useState([]);
-  const [loading, setLoading] = useState(true);
-
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { showSuccess, showError } = useGlobalAlert();
 
@@ -78,66 +72,64 @@ export default function TenantDashboard() {
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState("");
 
-  const fetchAllTenantData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [
-        userProfile,
-        userRequests,
-        userNotifications,
-        associatedProperties,
-        scheduledTasksRes,
-        userLeases,
-        userRents,
-      ] = await Promise.all([
-        getMyProfile(),
-        getAllRequests(), // Assuming backend filters by user automatically
-        getAllNotifications(),
-        getAllProperties(), // Assuming this fetches properties associated with the user
-        getAllScheduledMaintenance(), // Assuming this fetches tasks relevant to the user's properties/units
-        getLeases(), // Fetch all leases for the tenant
-        getRentEntries(), // Fetch all rent payments for the tenant
-      ]);
+  // Fetch user profile data
+  const { data: profile, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ['tenantProfile'],
+    queryFn: () => userService.getMyProfile(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-      setProfile(userProfile);
-      setRequests(userRequests); // Filter by createdBy if not already done by backend
-      setNotifications(userNotifications);
-      setMyProperties(associatedProperties);
+  // Fetch recent maintenance requests
+  const { data: requestsData, isLoading: isLoadingRequests, refetch: refetchRequests } = useQuery({
+    queryKey: ['tenantRequests'],
+    queryFn: async () => {
+      const response = await requestService.getAllRequests({ 
+        limit: 5, 
+        sort: 'createdAt', 
+        order: 'desc' 
+      });
+      return response.requests || [];
+    },
+    staleTime: 60 * 1000, // 1 minute
+  });
 
-      const upcoming =
-        scheduledTasksRes.tasks
-          ?.filter(
-            (task) =>
-              new Date(task.scheduledDate) > new Date() &&
-              task.status !== SCHEDULED_MAINTENANCE_STATUS_ENUM.COMPLETED &&
-              task.status !== SCHEDULED_MAINTENANCE_STATUS_ENUM.CANCELED
-          )
-          .sort(
-            (a, b) =>
-              new Date(a.scheduledDate) - new Date(b.scheduledDate)
-          ) || [];
-      setUpcomingMaintenance(upcoming);
+  // Fetch notifications
+  const { data: notificationsData, isLoading: isLoadingNotifications } = useQuery({
+    queryKey: ['tenantNotifications'],
+    queryFn: async () => {
+      const response = await notificationService.getAllNotifications({ 
+        limit: 5,
+        sort: 'createdAt',
+        order: 'desc'
+      });
+      return response.data || [];
+    },
+    staleTime: 60 * 1000, // 1 minute
+  });
 
-      setLeases(userLeases);
-      setRents(userRents);
+  // Fetch properties
+  const { data: propertiesData, isLoading: isLoadingProperties } = useProperties();
 
-    } catch (err) {
-      const message = err.response?.data?.message || "Failed to load tenant dashboard data. Please try again.";
-      showError(message);
-      setRequests([]);
-      setNotifications([]);
-      setMyProperties([]);
-      setUpcomingMaintenance([]);
-      setLeases([]);
-      setRents([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [showError]);
+  // Fetch upcoming maintenance
+  const { data: maintenanceData, isLoading: isLoadingMaintenance } = useQuery({
+    queryKey: ['upcomingMaintenance'],
+    queryFn: async () => {
+      const response = await scheduledMaintenanceService.getAllScheduledMaintenance({
+        status: 'active,in_progress',
+        sort: 'scheduledDate',
+        order: 'asc',
+        limit: 5
+      });
+      return response.tasks || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  useEffect(() => {
-    fetchAllTenantData();
-  }, [fetchAllTenantData]);
+  // Fetch leases
+  const { data: leasesData, isLoading: isLoadingLeases } = useLeases();
+
+  // Fetch rent records
+  const { data: rentsData, isLoading: isLoadingRents } = useRents();
 
   // Feedback Modal Handlers
   const handleOpenFeedbackModal = (requestId) => {
@@ -158,14 +150,15 @@ export default function TenantDashboard() {
       return;
     }
     try {
-      await submitFeedback(selectedRequestId, {
+      await requestService.submitFeedback(selectedRequestId, {
         rating: feedbackRating,
         comment: feedbackComment,
       });
       showSuccess("Feedback submitted successfully!");
       handleCloseFeedbackModal();
-      // Refresh requests to update feedback status
-      await fetchAllTenantData();
+      
+      // Refresh requests data
+      refetchRequests();
     } catch (err) {
       showError(
         "Failed to submit feedback. " +
@@ -174,7 +167,12 @@ export default function TenantDashboard() {
     }
   };
 
-  if (loading) {
+  // Check if any data is still loading
+  const isLoading = isLoadingProfile || isLoadingRequests || isLoadingNotifications || 
+                   isLoadingProperties || isLoadingMaintenance || isLoadingLeases || 
+                   isLoadingRents;
+
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <LoadingSpinner size="lg" color="#219377" className="mr-4" />
@@ -182,6 +180,14 @@ export default function TenantDashboard() {
       </div>
     );
   }
+
+  // Prepare data for display
+  const recentRequests = requestsData || [];
+  const notifications = notificationsData || [];
+  const myProperties = propertiesData?.properties || [];
+  const upcomingMaintenance = maintenanceData || [];
+  const leases = leasesData?.leases || [];
+  const rents = rentsData?.rents || [];
 
   // Determine the primary unit/property for display, if any
   const primaryTenancy = profile?.associations?.tenancies?.[0];
@@ -191,7 +197,7 @@ export default function TenantDashboard() {
   return (
     <div className="p-4 md:p-8 min-h-full bg-gray-50">
       <h1 className="text-3xl font-extrabold mb-7 border-b pb-3 text-green-700 border-green-700">
-        Welcome, {profile?.name || profile?.email}!
+        Welcome, {profile?.firstName || profile?.email || user?.firstName || user?.email}!
       </h1>
       <p className="text-lg text-gray-700 mb-8">
         Here's a snapshot of your property, maintenance, and financial activity.
@@ -207,7 +213,7 @@ export default function TenantDashboard() {
           {profile && (
             <div className="text-gray-700 space-y-2">
               <div>
-                <b className="font-medium">Name:</b> {profile.name}
+                <b className="font-medium">Name:</b> {profile.firstName} {profile.lastName}
               </div>
               <div>
                 <b className="font-medium">Email:</b> {profile.email}
@@ -259,7 +265,7 @@ export default function TenantDashboard() {
                 <strong>Unit:</strong> {currentUnit.unitName || "N/A"}
               </p>
               <Link
-                to={ROUTES.TENANT_MY_UNIT.replace(':unitId', currentUnit._id)} // Assuming a tenant-specific unit view
+                to={ROUTES.TENANT_MY_UNIT.replace(':unitId', currentUnit._id)}
                 className="text-blue-600 hover:underline"
               >
                 View Unit Details
@@ -311,16 +317,16 @@ export default function TenantDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {leases.slice(0, 3).map((lease) => ( // Show top 3 recent leases
+                {leases.slice(0, 3).map((lease) => (
                   <tr key={lease._id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {lease.property?.name || "N/A"} / {lease.unit?.unitName || "N/A"}
+                      {lease.propertyName || "N/A"} / {lease.unitName || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {formatDate(lease.startDate)} - {formatDate(lease.endDate)}
+                      {formatDate(lease.leaseStartDate)} - {formatDate(lease.leaseEndDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      ${lease.rentAmount?.toFixed(2) || "0.00"} / {lease.rentFrequency || "N/A"}
+                      ${lease.monthlyRent?.toFixed(2) || "0.00"} / {lease.rentFrequency || "month"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       <LeaseStatusBadge status={lease.status} />
@@ -379,22 +385,22 @@ export default function TenantDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {rents.slice(0, 3).map((rent) => ( // Show top 3 recent payments
+                {rents.slice(0, 3).map((rent) => (
                   <tr key={rent._id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {rent.property?.name || "N/A"} / {rent.unit?.unitName || "N/A"}
+                      {rent.propertyName || "N/A"} / {rent.unitName || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      ${rent.amountDue?.toFixed(2) || "0.00"}
+                      {rent.formattedAmount || `$${rent.amountDue?.toFixed(2) || "0.00"}`}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {formatDate(rent.dueDate)}
+                      {rent.formattedDueDate || formatDate(rent.dueDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">
-                      {rent.paymentStatus?.replace(/_/g, ' ') || "N/A"}
+                      {rent.statusDisplay || rent.status?.replace(/_/g, ' ') || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {rent.paidAt ? formatDate(rent.paidAt) : "N/A"}
+                      {rent.formattedPaymentDate || (rent.paymentDate ? formatDate(rent.paymentDate) : "N/A")}
                     </td>
                   </tr>
                 ))}
@@ -417,7 +423,7 @@ export default function TenantDashboard() {
             View All Requests &rarr;
           </Link>
         </div>
-        {requests.length === 0 ? (
+        {recentRequests.length === 0 ? (
           <p className="text-gray-600 italic">
             You have no maintenance requests submitted yet.
           </p>
@@ -444,7 +450,7 @@ export default function TenantDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {requests.slice(0, 5).map((req) => (
+                {recentRequests.slice(0, 5).map((req) => (
                   <tr key={req._id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       <Link to={ROUTES.REQUEST_DETAILS.replace(':requestId', req._id)} className="text-green-600 hover:underline">
@@ -455,10 +461,10 @@ export default function TenantDashboard() {
                       <StatusBadge status={req.status} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">
-                      {req.category}
+                      {req.categoryDisplay || req.category}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {formatDate(req.createdAt)}
+                      {req.createdAtFormatted || formatDate(req.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
@@ -533,13 +539,13 @@ export default function TenantDashboard() {
                       {task.title}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {task.property?.name || "N/A"}
+                      {task.propertyName || task.property?.name || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {task.unit?.unitName || "N/A"}
+                      {task.unitName || task.unit?.unitName || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {formatDate(task.scheduledDate)}
+                      {task.scheduledDateFormatted || formatDate(task.scheduledDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">
                       <StatusBadge status={task.status} />
@@ -579,7 +585,7 @@ export default function TenantDashboard() {
                 }`}
               >
                 <Link
-                  to={ROUTES.NOTIFICATIONS} // Link to general notifications page
+                  to={ROUTES.NOTIFICATIONS}
                   className="hover:underline"
                 >
                   {notif.message}{" "}

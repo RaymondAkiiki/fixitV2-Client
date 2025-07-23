@@ -1,19 +1,15 @@
-// frontend/src/pages/auth/SetPasswordPage.jsx
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { resetPassword } from '../../services/authService.js'; // Ensure .js extension
-import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx'; // Import useGlobalAlert
-import useForm from '../../hooks/useForm.js'; // Import useForm hook
-import Input from '../../components/common/Input.jsx'; // Ensure .jsx extension
-import Button from '../../components/common/Button.jsx'; // Ensure .jsx extension
-import { Lock, CheckCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react'; // Icons
-import { ROUTES } from '../../utils/constants.js'; // Import ROUTES
+import { resetPassword } from '../../services/authService.js';
+import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
+import useForm from '../../hooks/useForm.js';
+import Input from '../../components/common/Input.jsx';
+import Button from '../../components/common/Button.jsx';
+import { Lock, CheckCircle, ArrowLeft, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { ROUTES } from '../../utils/constants.js';
 
 /**
  * Client-side validation function for the set password form.
- * @param {object} values - The current form values { password, confirmPassword }.
- * @returns {object} An object containing validation errors, if any.
  */
 const validateSetPasswordForm = (values) => {
   const errors = {};
@@ -34,12 +30,21 @@ const validateSetPasswordForm = (values) => {
 };
 
 const SetPasswordPage = () => {
-  const { token } = useParams(); // Get reset token from URL
+  const { token } = useParams();
   const navigate = useNavigate();
-  const { showSuccess, showError } = useGlobalAlert(); // Destructure from useGlobalAlert
+  const { showSuccess, showError } = useGlobalAlert();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [tokenValid, setTokenValid] = useState(true);
+
+  // Check token existence
+  useEffect(() => {
+    if (!token) {
+      setTokenValid(false);
+      showError('Password reset token is missing. Please use the link from your email.');
+    }
+  }, [token, showError]);
 
   // Initialize useForm hook
   const {
@@ -51,30 +56,59 @@ const SetPasswordPage = () => {
   } = useForm(
     { password: '', confirmPassword: '' },
     validateSetPasswordForm,
-    async (formValues) => { // This is the onSubmitCallback for useForm
-      if (!token) {
+    async (formValues) => {
+      if (!token || !tokenValid) {
         showError('Password reset token is missing or invalid. Please use the link from your email.');
-        return; // Prevent API call if token is missing
+        return;
       }
 
       try {
-        await resetPassword(token, formValues.password);
-        showSuccess('Password reset successfully! Redirecting to login...');
+        const response = await resetPassword(token, formValues.password);
+        showSuccess(response.message || 'Password reset successfully! Redirecting to login...');
         setTimeout(() => navigate(ROUTES.LOGIN, { replace: true }), 2000);
       } catch (err) {
         console.error("Reset password error in SetPasswordPage:", err);
         showError(err.response?.data?.message || 'Failed to reset password. The link may be expired or invalid.');
+        
+        // If token is invalid or expired, mark it as invalid
+        if (err.message?.toLowerCase().includes('invalid') || 
+            err.message?.toLowerCase().includes('expired')) {
+          setTokenValid(false);
+        }
       }
     }
   );
 
+  // If token is invalid, show error state
+  if (!tokenValid) {
+    return (
+      <div className="p-8 bg-white rounded-xl shadow-2xl border border-gray-100 max-w-md w-full text-center mx-auto">
+        <AlertTriangle className="w-16 h-16 mx-auto text-red-600 mb-4" />
+        <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Invalid Reset Link</h2>
+        <p className="text-gray-600 mb-6">
+          This password reset link is invalid or has expired. Please request a new password reset link.
+        </p>
+        <Button
+          variant="primary"
+          className="w-full py-3"
+          onClick={() => navigate(ROUTES.FORGOT_PASSWORD)}
+        >
+          Request New Reset Link
+        </Button>
+        <div className="mt-6">
+          <Link to={ROUTES.LOGIN} className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 hover:underline font-medium transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-xl border border-gray-100 text-center mx-auto">
+    <div className="p-8 bg-white rounded-xl shadow-2xl border border-gray-100 max-w-md w-full text-center mx-auto">
       <Lock className="w-16 h-16 mx-auto text-green-700 mb-4" />
       <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Set Your New Password</h2>
       <p className="text-gray-600 mb-6">Enter and confirm your new strong password for FixIt.</p>
-
-      {/* Message display is now handled by GlobalAlertContext, so no local Alert component needed here */}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="relative">
@@ -87,10 +121,10 @@ const SetPasswordPage = () => {
             onChange={handleChange}
             placeholder="Minimum 8 characters"
             required
-            error={errors.password} // Pass specific error for password input
+            error={errors.password}
             disabled={isSubmitting}
             minLength={8}
-            className="pr-10" // Add padding for the toggle button
+            className="pr-10"
           />
           <button
             type="button"
@@ -113,7 +147,7 @@ const SetPasswordPage = () => {
             onChange={handleChange}
             placeholder="Re-enter new password"
             required
-            error={errors.confirmPassword} // Pass specific error for confirm password input
+            error={errors.confirmPassword}
             disabled={isSubmitting}
             className="pr-10"
           />

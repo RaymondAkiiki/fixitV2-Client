@@ -1,21 +1,25 @@
-// frontend/src/pages/public/PublicScheduledMaintenanceViewPage.jsx
+// src/pages/public/PublicScheduledMaintenanceViewPage.jsx
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import Button from "../../components/common/Button.jsx"; // Ensure .jsx extension
-import LoadingSpinner from "../../components/common/LoadingSpinner.jsx"; // Using LoadingSpinner
-import ConfirmationModal from "../../components/common/modals/ConfirmationModal.jsx"; // Assuming this modal exists
-// Removed Alert component as global alerts will be used
+import Button from "../../components/common/Button.jsx";
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
+import ConfirmationModal from "../../components/common/modals/ConfirmationModal.jsx";
 import {
-  Wrench, Building, Home, User, Calendar, Clock, MessageSquare, CheckCircle
+  Wrench, Building, Home, User, Calendar, Clock, MessageSquare, CheckCircle,
+  Send, PaperclipIcon, Image
 } from "lucide-react";
 
-import { getPublicScheduledMaintenanceView, publicScheduledMaintenanceUpdate } from "../../services/publicService.js"; // Ensure .js extension
-import { useGlobalAlert } from "../../contexts/GlobalAlertContext.jsx"; // Import useGlobalAlert
-import { SCHEDULED_MAINTENANCE_STATUS_ENUM, ROUTES } from "../../utils/constants.js"; // Import constants
-import { formatDate, formatDateTime } from "../../utils/helpers.js"; // Import helper functions for dates and media types
+import { 
+  getPublicScheduledMaintenanceView, 
+  publicScheduledMaintenanceUpdate,
+  addPublicCommentToScheduledMaintenance
+} from "../../services/publicService.js";
+import { useGlobalAlert } from "../../contexts/GlobalAlertContext.jsx";
+import { SCHEDULED_MAINTENANCE_STATUS_ENUM, ROUTES } from "../../utils/constants.js";
+import { formatDate, formatDateTime, isImage, isVideo } from "../../utils/helpers.js";
 
-// -- Status Badge Component (adapted to use constants) --
+// -- Status Badge Component --
 const StatusBadge = ({ status }) => {
   const base = "px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide";
   switch (status?.toLowerCase()) {
@@ -30,15 +34,22 @@ const StatusBadge = ({ status }) => {
 
 function PublicScheduledMaintenanceViewPage() {
   const { publicToken } = useParams();
-  const { showSuccess, showError } = useGlobalAlert(); // Destructure from useGlobalAlert
+  const { showSuccess, showError } = useGlobalAlert();
+  const commentInputRef = useRef(null);
 
   const [maintenance, setMaintenance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [statusToUpdate, setStatusToUpdate] = useState(null); // State to hold the status for confirmation
+  const [statusToUpdate, setStatusToUpdate] = useState(null);
+  
+  // Comment functionality
+  const [commentText, setCommentText] = useState("");
+  const [sendingComment, setSendingComment] = useState(false);
+  const [commentFiles, setCommentFiles] = useState([]);
+  const [commentError, setCommentError] = useState("");
 
-  // Fetch maintenance details using the public token
+  // Fetch maintenance details
   const fetchMaintenanceDetails = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -46,9 +57,9 @@ function PublicScheduledMaintenanceViewPage() {
       const data = await getPublicScheduledMaintenanceView(publicToken);
       setMaintenance(data);
     } catch (err) {
-      const message = err.response?.data?.message || "Failed to load maintenance details. This link may be invalid, expired, or the task might not exist.";
+      const message = err.message || "Failed to load maintenance details. This link may be invalid, expired, or the task might not exist.";
       setError(message);
-      showError(message); // Display error using global alert
+      showError(message);
       console.error("Public maintenance details fetch error:", err);
     } finally {
       setLoading(false);
@@ -67,28 +78,79 @@ function PublicScheduledMaintenanceViewPage() {
 
   // Function to handle the actual status update after confirmation
   const confirmUpdateStatus = async () => {
-    setShowConfirmModal(false); // Close the modal
-    if (!statusToUpdate) return; // Should not happen if initiated correctly
+    setShowConfirmModal(false);
+    if (!statusToUpdate) return;
 
-    setLoading(true); // Set loading for the action
-    setError(null); // Clear any previous errors
+    setLoading(true);
+    setError(null);
 
     try {
       await publicScheduledMaintenanceUpdate(publicToken, { status: statusToUpdate.toLowerCase() });
       showSuccess(`Maintenance status updated to "${statusToUpdate.replace(/_/g, ' ')}" successfully!`);
-      fetchMaintenanceDetails(); // Refresh the maintenance details
+      fetchMaintenanceDetails();
     } catch (err) {
-      const message = err.response?.data?.message || `Failed to update status to "${statusToUpdate.replace(/_/g, ' ')}". Please try again.`;
+      const message = err.message || `Failed to update status to "${statusToUpdate.replace(/_/g, ' ')}". Please try again.`;
       setError(message);
-      showError(message); // Display error using global alert
+      showError(message);
       console.error("Public maintenance status update error:", err);
     } finally {
       setLoading(false);
-      setStatusToUpdate(null); // Clear the status to update
+      setStatusToUpdate(null);
     }
   };
 
-  if (loading) {
+  // Function to handle file selection for comments
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    setCommentFiles(selectedFiles);
+  };
+
+  // Function to handle comment submission
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!commentText.trim()) {
+      setCommentError("Please enter a comment.");
+      return;
+    }
+    
+    setSendingComment(true);
+    setCommentError("");
+    
+    try {
+      // Prepare the comment data
+      const commentData = {
+        message: commentText,
+        name: "External User", // This will be overridden by the backend if logged in
+      };
+      
+      // Add files if present
+      if (commentFiles.length > 0) {
+        // This would require a different API call structure or formData
+        // We'd need to extend the addPublicCommentToScheduledMaintenance function
+        // Simplified for now - assuming backend can handle files
+        commentData.files = commentFiles;
+      }
+      
+      await addPublicCommentToScheduledMaintenance(publicToken, commentData);
+      
+      // Reset form and refresh data
+      setCommentText("");
+      setCommentFiles([]);
+      showSuccess("Comment added successfully!");
+      fetchMaintenanceDetails();
+      
+    } catch (err) {
+      const message = err.message || "Failed to add comment. Please try again.";
+      setCommentError(message);
+      showError(message);
+      console.error("Add comment error:", err);
+    } finally {
+      setSendingComment(false);
+    }
+  };
+
+  if (loading && !maintenance) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <LoadingSpinner size="lg" color="#219377" className="mr-4" />
@@ -97,10 +159,9 @@ function PublicScheduledMaintenanceViewPage() {
     );
   }
 
-  if (error) {
+  if (error && !maintenance) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-8">
-        {/* Error message is already displayed via GlobalAlertContext */}
         <h3 className="text-lg font-semibold text-red-600 mb-4">Error Loading Scheduled Maintenance</h3>
         <p className="mt-2 text-center text-gray-700">{error}</p>
         <p className="mt-6 text-center text-gray-700">Please check the link or contact the property manager for assistance.</p>
@@ -114,8 +175,6 @@ function PublicScheduledMaintenanceViewPage() {
   }
 
   if (!maintenance) {
-    // This case should ideally be covered by the error state if fetchMaintenanceDetails fails to get data
-    // but kept as a fallback for clarity.
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <p className="text-xl text-gray-600">Scheduled maintenance not found.</p>
@@ -180,34 +239,109 @@ function PublicScheduledMaintenanceViewPage() {
                   <CheckCircle className="w-5 h-5 mr-2" /> Mark Completed
                 </Button>
               )}
-              {/* Add more vendor-specific status updates if needed */}
             </div>
           </div>
         )}
 
-        {/* Comments Section (if your backend provides) */}
-        {maintenance.comments && (
+        {/* Media Section */}
+        {maintenance.media && maintenance.media.length > 0 && (
           <div className="mb-10 p-6 rounded-xl bg-gray-50 border border-gray-200">
             <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-              <MessageSquare className="w-6 h-6 mr-2 text-green-700" /> Comments
+              <Image className="w-6 h-6 mr-2 text-green-700" /> Media Files
             </h2>
-            <div className="space-y-6 mb-6 max-h-80 overflow-y-auto pr-2">
-              {maintenance.comments.length > 0 ? (
-                maintenance.comments.map(comment => (
-                  <div key={comment._id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                    <div className="flex justify-between items-center mb-2">
-                      <p className="font-semibold text-gray-900">{comment.user?.name || comment.user?.email || "External User"}</p>
-                      <p className="text-xs text-gray-500">{formatDateTime(comment.createdAt)}</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-5">
+              {maintenance.media.map((mediaItem, index) => (
+                <div key={index} className="relative group rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                  {isImage(mediaItem.mimeType) ? (
+                    <img src={mediaItem.url} alt={`Media ${index + 1}`} className="w-full h-32 object-cover" />
+                  ) : isVideo(mediaItem.mimeType) ? (
+                    <video src={mediaItem.url} controls className="w-full h-32 object-contain" />
+                  ) : (
+                    <div className="w-full h-32 flex items-center justify-center bg-gray-200 text-gray-600">
+                      <span className="text-center">File Preview Not Available</span>
                     </div>
-                    <p className="text-gray-800">{comment.message}</p>
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <a href={mediaItem.url} target="_blank" rel="noopener noreferrer" className="text-white hover:text-green-300 text-xl mx-2">
+                      View Full
+                    </a>
                   </div>
-                ))
-              ) : (
-                <p className="text-gray-600 italic">No comments yet.</p>
-              )}
+                </div>
+              ))}
             </div>
           </div>
         )}
+
+        {/* Comments Section with Add Comment functionality */}
+        <div className="mb-10 p-6 rounded-xl bg-gray-50 border border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+            <MessageSquare className="w-6 h-6 mr-2 text-green-700" /> Comments
+          </h2>
+          
+          {/* Existing Comments */}
+          <div className="space-y-6 mb-6 max-h-80 overflow-y-auto pr-2">
+            {maintenance.comments && maintenance.comments.length > 0 ? (
+              maintenance.comments.map(comment => (
+                <div key={comment._id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="font-semibold text-gray-900">{comment.user?.name || comment.user?.email || "External User"}</p>
+                    <p className="text-xs text-gray-500">{formatDateTime(comment.createdAt)}</p>
+                  </div>
+                  <p className="text-gray-800">{comment.message}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-600 italic">No comments yet.</p>
+            )}
+          </div>
+          
+          {/* Add Comment Form */}
+          <form onSubmit={handleCommentSubmit} className="mt-6">
+            <div className="mb-2">
+              <label htmlFor="comment" className="block text-sm font-medium text-gray-700">Add a comment</label>
+              <textarea
+                id="comment"
+                name="comment"
+                rows="3"
+                ref={commentInputRef}
+                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                placeholder="Type your message here..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                disabled={sendingComment}
+              ></textarea>
+              {commentError && <p className="mt-1 text-sm text-red-600">{commentError}</p>}
+            </div>
+            
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center">
+                <label htmlFor="fileInput" className="cursor-pointer flex items-center text-gray-700 hover:text-gray-900">
+                  <PaperclipIcon className="w-5 h-5 mr-1" />
+                  <span className="text-sm">
+                    {commentFiles.length > 0 ? `${commentFiles.length} file(s) selected` : "Attach files"}
+                  </span>
+                </label>
+                <input
+                  type="file"
+                  id="fileInput"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                  disabled={sendingComment}
+                />
+              </div>
+              
+              <Button
+                type="submit"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center"
+                disabled={sendingComment || !commentText.trim()}
+                loading={sendingComment}
+              >
+                <Send className="w-4 h-4 mr-2" /> {sendingComment ? "Sending..." : "Send Comment"}
+              </Button>
+            </div>
+          </form>
+        </div>
 
         <p className="text-center text-gray-600 text-sm mt-8">
           This is a public view of the scheduled maintenance task. For full management, please log in to the Fix It platform.

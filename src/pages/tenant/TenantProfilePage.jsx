@@ -1,19 +1,20 @@
 // frontend/src/pages/tenant/TenantProfilePage.jsx
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { User, Lock, Bell, Save, Eye, EyeOff, Home } from "lucide-react"; // Added Home icon for associations
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import Input from "../../components/common/Input.jsx";
 import Button from "../../components/common/Button.jsx";
-import LoadingSpinner from "../../components/common/LoadingSpinner.jsx"; // Using LoadingSpinner
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 
-import { getMyProfile, updateMyProfile } from "../../services/userService.js";
-import { changePassword } from "../../services/authService.js";
+import * as userService from "../../services/userService.js";
+import * as authService from "../../services/authService.js";
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import { useGlobalAlert } from "../../contexts/GlobalAlertContext.jsx";
-import useForm from "../../hooks/useForm.js"; // Import useForm hook
-import { ROUTES } from "../../utils/constants.js"; // Import ROUTES
+import useForm from "../../hooks/useForm.js";
+import { ROUTES } from "../../utils/constants.js";
 
 // Define primary color for consistent styling
 const PRIMARY_COLOR = "#219377";
@@ -58,12 +59,53 @@ const validatePasswordForm = (values) => {
 };
 
 function TenantProfilePage() {
-  const { setUser } = useAuth(); // Assuming setUser is available to update auth context
+  const { user, setUser } = useAuth();
   const { showSuccess, showError } = useGlobalAlert();
+  const queryClient = useQueryClient();
 
-  // State for initial profile data loading
-  const [initialProfileLoad, setInitialProfileLoad] = useState(true);
-  const [profile, setProfile] = useState(null); // Keep original profile for associations display
+  // Password Visibility States
+  const [showPassword, setShowPassword] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+
+  // Fetch user profile data using React Query
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: () => userService.getMyProfile(),
+    onError: (error) => {
+      showError("Failed to load profile data: " + (error.message || "Unknown error"));
+    }
+  });
+
+  // Profile update mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: (profileData) => userService.updateMyProfile(profileData),
+    onSuccess: (data) => {
+      showSuccess("Profile updated successfully!");
+      // Update auth context with new user data if needed
+      if (setUser) setUser((prev) => ({ ...prev, ...data }));
+      // Invalidate the user profile query to refetch
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+    },
+    onError: (error) => {
+      showError("Failed to update profile: " + (error.message || "Unknown error"));
+    }
+  });
+
+  // Password change mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: ({ currentPassword, newPassword }) => 
+      authService.changePassword(currentPassword, newPassword),
+    onSuccess: () => {
+      showSuccess("Password changed successfully! Please log in with your new password if redirected.");
+      resetPasswordForm();
+    },
+    onError: (error) => {
+      showError("Failed to change password: " + (error.message || "Unknown error"));
+    }
+  });
 
   // --- Profile Information Form with useForm ---
   const {
@@ -71,28 +113,18 @@ function TenantProfilePage() {
     errors: profileErrors,
     handleChange: handleProfileChange,
     handleSubmit: handleUpdateProfile,
-    isSubmitting: isUpdatingProfile, // Loading state for profile update form
-    setValues: setProfileFormValues // To set initial values from API
+    isSubmitting: isUpdatingProfile,
+    setValues: setProfileFormValues,
+    resetForm: resetProfileForm
   } = useForm(
     { name: "", email: "", phone: "", notificationsEnabled: true },
     validateProfileForm,
     async (formValues) => {
-      try {
-        const updatedUser = await updateMyProfile({
-          name: formValues.name,
-          phone: formValues.phone,
-          notificationsEnabled: formValues.notificationsEnabled,
-        });
-        // Update the user context with the new profile data
-        if (setUser) setUser((prev) => ({ ...prev, ...updatedUser }));
-        setProfile(updatedUser); // Update local profile state as well
-        showSuccess("Profile updated successfully!");
-        // Optionally, turn off editing mode after successful save
-        // setIsEditing(false); // If you want to automatically switch back to view mode
-      } catch (err) {
-        console.error("Failed to update profile:", err);
-        showError(err.response?.data?.message || "Failed to update profile. Please try again.");
-      }
+      updateProfileMutation.mutate({
+        name: formValues.name,
+        phone: formValues.phone,
+        notificationsEnabled: formValues.notificationsEnabled,
+      });
     }
   );
 
@@ -102,59 +134,38 @@ function TenantProfilePage() {
     errors: passwordErrors,
     handleChange: handlePasswordChange,
     handleSubmit: handleChangePassword,
-    isSubmitting: isChangingPassword, // Loading state for password change form
-    resetForm: resetPasswordForm // To clear password fields after successful change
+    isSubmitting: isChangingPassword,
+    resetForm: resetPasswordForm
   } = useForm(
     { currentPassword: "", newPassword: "", confirmNewPassword: "" },
     validatePasswordForm,
     async (formValues) => {
-      try {
-        await changePassword(formValues.currentPassword, formValues.newPassword);
-        showSuccess("Password changed successfully! Please log in with your new password if redirected.");
-        resetPasswordForm(); // Clear password fields
-      } catch (err) {
-        console.error("Failed to change password:", err);
-        showError(err.response?.data?.message || "Failed to change password. Please try again.");
-      }
+      changePasswordMutation.mutate({
+        currentPassword: formValues.currentPassword,
+        newPassword: formValues.newPassword
+      });
     }
   );
 
-  // --- Fetch current user profile on component mount ---
-  const fetchProfileData = useCallback(async () => {
-    setInitialProfileLoad(true);
-    try {
-      const data = await getMyProfile();
-      setProfile(data); // Set the full profile data
-      setProfileFormValues({ // Populate the profile edit form
-        name: data.name || "",
-        email: data.email || "",
-        phone: data.phone || "",
-        notificationsEnabled: data.notificationsEnabled !== undefined ? data.notificationsEnabled : true,
-      });
-    } catch (err) {
-      console.error("Failed to load profile data:", err);
-      showError("Failed to load profile data. " + (err.response?.data?.message || err.message));
-    } finally {
-      setInitialProfileLoad(false);
-    }
-  }, [showError, setProfileFormValues]);
-
+  // Set initial form values when profile data is loaded
   useEffect(() => {
-    fetchProfileData();
-  }, [fetchProfileData]);
-
-  // --- Password Visibility States ---
-  const [showPassword, setShowPassword] = useState({
-    current: false,
-    new: false,
-    confirm: false,
-  });
+    if (profile) {
+      setProfileFormValues({
+        name: profile.name || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
+        notificationsEnabled: profile.notificationsEnabled !== undefined 
+          ? profile.notificationsEnabled 
+          : true,
+      });
+    }
+  }, [profile, setProfileFormValues]);
 
   const togglePasswordVisibility = (field) => {
     setShowPassword((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
-  if (initialProfileLoad) {
+  if (profileLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <LoadingSpinner size="lg" color={PRIMARY_COLOR} className="mr-4" />

@@ -1,0 +1,582 @@
+// frontend/src/pages/admin/AdminLeaseManagementPage.jsx
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import * as adminService from "../../services/adminService.js";
+import * as leaseService from "../../services/leaseService.js";
+import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
+import LoadingSpinner from '../../components/common/LoadingSpinner.jsx';
+import { ROUTES } from '../../utils/constants.js';
+import { formatDate, formatCurrency } from '../../utils/helpers.js';
+import useDebounce from '../../hooks/useDebounce.js';
+
+// Status Badge Component
+const LeaseStatusBadge = ({ status }) => {
+  const getStatusClass = () => {
+    const statusLower = status?.toLowerCase();
+    switch(statusLower) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'expired':
+        return 'bg-gray-100 text-gray-800';
+      case 'pending_renewal':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'draft':
+        return 'bg-blue-100 text-blue-800';
+      case 'terminated':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase ${getStatusClass()}`}>
+      {status?.replace(/_/g, ' ') || 'Unknown'}
+    </span>
+  );
+};
+
+const AdminLeaseManagementPage = () => {
+  const { showError, showSuccess } = useGlobalAlert();
+  
+  // State for leases data
+  const [leases, setLeases] = useState([]);
+  const [properties, setProperties] = useState([]);
+  const [expiringLeases, setExpiringLeases] = useState([]);
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 1
+  });
+  
+  // Loading states
+  const [loading, setLoading] = useState(true);
+  const [propertiesLoading, setPropertiesLoading] = useState(true);
+  const [expiringLoading, setExpiringLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  
+  // Filter state
+  const [filters, setFilters] = useState({
+    search: '',
+    status: '',
+    propertyId: '',
+    tenantId: '',
+    dateFrom: '',
+    dateTo: '',
+  });
+  
+  // Debounce search input
+  const debouncedSearch = useDebounce(filters.search, 500);
+  
+  // Abort controllers for API requests
+  const leasesAbortController = useRef(null);
+  const propertiesAbortController = useRef(null);
+  const expiringAbortController = useRef(null);
+
+  // Fetch leases with filters and pagination
+  const fetchLeases = useCallback(async () => {
+    // Cancel any ongoing request
+    if (leasesAbortController.current) {
+      leasesAbortController.current.abort();
+    }
+    
+    // Create new abort controller
+    leasesAbortController.current = new AbortController();
+    const signal = leasesAbortController.current.signal;
+    
+    setLoading(true);
+    
+    try {
+      // Prepare API parameters
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        ...filters,
+        search: debouncedSearch
+      };
+      
+      // Remove empty filters
+      Object.keys(params).forEach(key => {
+        if (!params[key] && params[key] !== 0) {
+          delete params[key];
+        }
+      });
+      
+      // Call the API using adminService
+      const response = await adminService.getAllLeases(params, signal);
+      
+      // Update state with response data
+      setLeases(response.data || []);
+      setPagination({
+        page: response.pagination?.page || 1,
+        limit: response.pagination?.limit || 10,
+        total: response.pagination?.total || 0,
+        pages: response.pagination?.pages || 1
+      });
+    } catch (error) {
+      if (error.message !== 'Request canceled') {
+        showError('Failed to load leases: ' + error.message);
+        console.error('Error fetching leases:', error);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [debouncedSearch, filters, pagination.page, pagination.limit, showError]);
+
+  // Fetch properties for filter dropdown
+  const fetchProperties = useCallback(async () => {
+    // Cancel any ongoing request
+    if (propertiesAbortController.current) {
+      propertiesAbortController.current.abort();
+    }
+    
+    // Create new abort controller
+    propertiesAbortController.current = new AbortController();
+    const signal = propertiesAbortController.current.signal;
+    
+    setPropertiesLoading(true);
+    
+    try {
+      const response = await adminService.getAllProperties({ limit: 100 }, signal);
+      setProperties(response.data || []);
+    } catch (error) {
+      if (error.message !== 'Request canceled') {
+        console.error('Error fetching properties for filter:', error);
+      }
+    } finally {
+      setPropertiesLoading(false);
+    }
+  }, []);
+
+  // Fetch expiring leases
+  const fetchExpiringLeases = useCallback(async () => {
+    // Cancel any ongoing request
+    if (expiringAbortController.current) {
+      expiringAbortController.current.abort();
+    }
+    
+    // Create new abort controller
+    expiringAbortController.current = new AbortController();
+    const signal = expiringAbortController.current.signal;
+    
+    setExpiringLoading(true);
+    
+    try {
+      const response = await leaseService.getExpiringLeases({ daysAhead: 30 }, signal);
+      setExpiringLeases(response.data || []);
+    } catch (error) {
+      if (error.message !== 'Request canceled') {
+        console.error('Error fetching expiring leases:', error);
+      }
+    } finally {
+      setExpiringLoading(false);
+    }
+  }, []);
+
+  // Handle lease termination
+  const handleTerminateLease = useCallback(async (leaseId) => {
+    if (!window.confirm('Are you sure you want to terminate this lease? This action cannot be undone.')) {
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      await adminService.terminateLease(leaseId);
+      showSuccess('Lease terminated successfully');
+      // Refresh the list after action
+      fetchLeases();
+      fetchExpiringLeases();
+    } catch (error) {
+      showError(`Failed to terminate lease: ${error.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [fetchLeases, fetchExpiringLeases, showError, showSuccess]);
+
+  // Mark renewal notice sent
+  const handleMarkRenewalSent = useCallback(async (leaseId) => {
+    setActionLoading(true);
+    try {
+      await leaseService.markRenewalNoticeSent(leaseId);
+      showSuccess('Renewal notice marked as sent');
+      // Refresh expiring leases
+      fetchExpiringLeases();
+    } catch (error) {
+      showError(`Failed to mark renewal notice: ${error.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [fetchExpiringLeases, showError, showSuccess]);
+
+  // Initial data loading
+  useEffect(() => {
+    fetchProperties();
+    fetchExpiringLeases();
+    
+    return () => {
+      // Clean up requests on unmount
+      if (propertiesAbortController.current) {
+        propertiesAbortController.current.abort();
+      }
+      if (expiringAbortController.current) {
+        expiringAbortController.current.abort();
+      }
+    };
+  }, [fetchProperties, fetchExpiringLeases]);
+
+  // Fetch leases when filters or pagination changes
+  useEffect(() => {
+    fetchLeases();
+    
+    return () => {
+      if (leasesAbortController.current) {
+        leasesAbortController.current.abort();
+      }
+    };
+  }, [fetchLeases]);
+
+  // Filter change handlers
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+    
+    // Reset to page 1 when filters change
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setFilters({
+      search: '',
+      status: '',
+      propertyId: '',
+      tenantId: '',
+      dateFrom: '',
+      dateTo: '',
+    });
+    
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  // Page change handler
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  const leaseStatusOptions = [
+    { value: '', label: 'All Statuses' },
+    { value: 'active', label: 'Active' },
+    { value: 'expired', label: 'Expired' },
+    { value: 'pending_renewal', label: 'Pending Renewal' },
+    { value: 'terminated', label: 'Terminated' },
+    { value: 'draft', label: 'Draft' },
+  ];
+
+  return (
+    <div className="p-4 md:p-8 bg-[#f8fafc] min-h-full">
+      {/* Page Header */}
+      <div className="mb-8 border-b border-gray-200 pb-5">
+        <h1 className="text-3xl font-extrabold text-[#219377]">
+          Lease Management
+        </h1>
+        <p className="mt-1 text-lg text-gray-600">
+          Manage lease agreements, terms, and renewals across all properties.
+        </p>
+      </div>
+
+      {/* Action Button */}
+      <div className="mb-6 flex justify-end">
+        <Link 
+          to={ROUTES.ADMIN_LEASES_CREATE || ROUTES.ADMIN_LEASES + '/create'} 
+          className="px-4 py-2 bg-[#219377] text-white rounded-md hover:bg-[#1b7c66] transition-colors"
+        >
+          Create New Lease
+        </Link>
+      </div>
+      
+      {/* Expiring Leases Section */}
+      {!expiringLoading && expiringLeases.length > 0 && (
+        <div className="mb-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <h2 className="text-lg font-semibold text-yellow-800 mb-3">Expiring Leases</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-yellow-200">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">Property/Unit</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">Tenant</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">End Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">Rent Amount</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">Notice Sent</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-yellow-700 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-yellow-200">
+                {expiringLeases.map(lease => (
+                  <tr key={lease._id} className="hover:bg-yellow-100 transition-colors">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-yellow-900">
+                      {lease.property?.name || 'N/A'} / {lease.unit?.unitName || 'N/A'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-yellow-900">
+                      {lease.tenant ? `${lease.tenant.firstName} ${lease.tenant.lastName}` : 'N/A'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-yellow-900">
+                      {formatDate(lease.leaseEndDate)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-yellow-900">
+                      {lease.monthlyRent ? formatCurrency(lease.monthlyRent, lease.currency) : 'N/A'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                      {lease.renewalNoticeSent ? (
+                        <span className="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs font-semibold">
+                          Sent {formatDate(lease.renewalNoticeSentDate)}
+                        </span>
+                      ) : (
+                        <span className="bg-red-100 text-red-800 px-2.5 py-1 rounded-full text-xs font-semibold">
+                          Not Sent
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-3">
+                        <Link 
+                          to={ROUTES.ADMIN_LEASES + `/${lease._id}`} 
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          View
+                        </Link>
+                        {!lease.renewalNoticeSent && (
+                          <button 
+                            onClick={() => handleMarkRenewalSent(lease._id)}
+                            disabled={actionLoading}
+                            className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                          >
+                            Mark Notice Sent
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      
+      {/* Filters Section */}
+      <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-[#219377]">Filters</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {/* Search */}
+          <div>
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <input
+              type="text"
+              id="search"
+              name="search"
+              value={filters.search}
+              onChange={handleFilterChange}
+              placeholder="Search by tenant name or property"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#219377] focus:border-[#219377]"
+            />
+          </div>
+          
+          {/* Status */}
+          <div>
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <select
+              id="status"
+              name="status"
+              value={filters.status}
+              onChange={handleFilterChange}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#219377] focus:border-[#219377]"
+            >
+              {leaseStatusOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Property */}
+          <div>
+            <label htmlFor="propertyId" className="block text-sm font-medium text-gray-700 mb-1">Property</label>
+            <select
+              id="propertyId"
+              name="propertyId"
+              value={filters.propertyId}
+              onChange={handleFilterChange}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#219377] focus:border-[#219377]"
+              disabled={propertiesLoading}
+            >
+              <option value="">All Properties</option>
+              {properties.map(property => (
+                <option key={property._id} value={property._id}>{property.name}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Start Date From */}
+          <div>
+            <label htmlFor="dateFrom" className="block text-sm font-medium text-gray-700 mb-1">Start Date From</label>
+            <input
+              type="date"
+              id="dateFrom"
+              name="dateFrom"
+              value={filters.dateFrom}
+              onChange={handleFilterChange}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#219377] focus:border-[#219377]"
+            />
+          </div>
+          
+          {/* Start Date To */}
+          <div>
+            <label htmlFor="dateTo" className="block text-sm font-medium text-gray-700 mb-1">Start Date To</label>
+            <input
+              type="date"
+              id="dateTo"
+              name="dateTo"
+              value={filters.dateTo}
+              onChange={handleFilterChange}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-[#219377] focus:border-[#219377]"
+            />
+          </div>
+        </div>
+        
+        {/* Filter Action Buttons */}
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={handleResetFilters}
+            className="mr-3 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+          >
+            Reset Filters
+          </button>
+          <button
+            onClick={fetchLeases}
+            className="px-4 py-2 bg-[#219377] text-white rounded-md hover:bg-[#1b7c66] transition-colors"
+          >
+            Apply Filters
+          </button>
+        </div>
+      </div>
+      
+      {/* Leases Table */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        {loading && (
+          <div className="p-4 bg-blue-50 border-b border-blue-100 flex items-center">
+            <LoadingSpinner size="sm" className="mr-2" />
+            <span className="text-blue-800">Loading lease agreements...</span>
+          </div>
+        )}
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property/Unit</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tenant</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Term</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rent Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documents</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {leases.length > 0 ? (
+                leases.map(lease => (
+                  <tr key={lease._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {lease.property?.name || 'N/A'} / {lease.unit?.unitName || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {lease.tenant ? `${lease.tenant.firstName} ${lease.tenant.lastName}` : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(lease.leaseStartDate)} - {formatDate(lease.leaseEndDate)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {lease.monthlyRent ? formatCurrency(lease.monthlyRent, lease.currency) : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <LeaseStatusBadge status={lease.status} />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {lease.documents?.length || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-3">
+                        <Link 
+                          to={ROUTES.ADMIN_LEASES + `/${lease._id}`} 
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          View
+                        </Link>
+                        <Link 
+                          to={ROUTES.ADMIN_LEASES + `/edit/${lease._id}`} 
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Edit
+                        </Link>
+                        {lease.status === 'active' && (
+                          <button 
+                            onClick={() => handleTerminateLease(lease._id)}
+                            disabled={actionLoading}
+                            className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                          >
+                            Terminate
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="px-6 py-10 text-center text-gray-500">
+                    {loading ? 
+                      'Loading lease agreements...' : 
+                      'No lease agreements found matching your filters.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Pagination */}
+        {pagination.pages > 1 && (
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Showing <span className="font-medium">{leases.length}</span> of <span className="font-medium">{pagination.total}</span> leases
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page <= 1}
+                className="px-4 py-2 bg-white border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <div className="flex items-center">
+                <span className="text-gray-700 mx-2">Page {pagination.page} of {pagination.pages}</span>
+              </div>
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page >= pagination.pages}
+                className="px-4 py-2 bg-white border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminLeaseManagementPage;

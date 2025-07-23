@@ -1,205 +1,291 @@
 // frontend/src/pages/auth/WelcomePage.jsx
 
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ROUTES, APP_NAME } from "../../utils/constants.js"; // Import ROUTES and APP_NAME
+import {
+  ShieldCheckIcon,
+  UserGroupIcon,
+  ChartPieIcon,
+  BuildingOffice2Icon,
+  HomeModernIcon,
+  ArrowRightIcon,
+  SparklesIcon,
+  BoltIcon,
+  DocumentTextIcon,
+  CurrencyDollarIcon,
+  UserPlusIcon,
+} from "@heroicons/react/24/outline";
 
-// Unified app names/descriptions/links for other Threalty products
-const otherThrealtyApps = [
-  {
-    name: "Real Estate Genie",
-    desc: "Draft real estate documents faster with AI-powered templates.",
-    link: ROUTES.COMING_SOON, // Use constant for link
-    icon: "📄", // Explicit icon for clarity
-  },
-  {
-    name: "Real Estate AI Chatbot",
-    desc: "Get instant answers and property matches 24/7 with our smart assistant.",
-    link: ROUTES.COMING_SOON, // Use constant for link
-    icon: "🤖", // Explicit icon for clarity
-  },
-];
+// Using provided constants
+const ROUTES = {
+  REGISTER: "/register",
+  LOGIN: "/login",
+  COMING_SOON: "/coming-soon",
+  PRICING: "/pricing",
+};
+const APP_NAME = "Threalty Fixit";
+
+// Reusable, styled components for consistency and clean code
+const ActionButton = ({ to, children, variant = "primary", className = "" }) => {
+  const baseStyles = "inline-block text-center px-8 py-3 text-lg font-bold rounded-full shadow-lg transform transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-4";
+  const variants = {
+    primary: "bg-[#ffbd59] text-white hover:bg-[#e0a84e] focus:ring-[#ffbd59]/50", // Secondary color as primary CTA
+    secondary: "bg-transparent text-[#219377] border-2 border-[#219377] hover:bg-[#219377] hover:text-white focus:ring-[#219377]/30",
+  };
+  return (
+    <Link to={to} className={`${baseStyles} ${variants[variant]} ${className}`}>
+      {children}
+    </Link>
+  );
+};
+
+// --- WELCOME PAGE CONTENT ---
 
 const WelcomePage = () => {
+  const [activeTab, setActiveTab] = useState("maintenance");
+
+  const featureTabs = {
+    maintenance: [
+      { icon: ShieldCheckIcon, title: "Automated Issue Tracking", desc: "Log, assign, and monitor repairs with a transparent, real-time ticket system that keeps everyone informed." },
+      { icon: UserGroupIcon, title: "Unified Vendor Portals", desc: "Empower vendors with dedicated dashboards to receive jobs, update progress, and communicate instantly." },
+      { icon: ChartPieIcon, title: "Smart Maintenance Analytics", desc: "Visualize trends, costs, and response times. Make data-driven decisions to optimize your operations." },
+    ],
+    tenant: [
+      { icon: DocumentTextIcon, title: "Digital Lease Management", desc: "Go paperless with digital lease agreements. Automate renewal reminders and track key dates effortlessly." },
+      { icon: CurrencyDollarIcon, title: "Streamlined Rent Collection", desc: "Monitor payment statuses, send automated reminders, and allow tenants to upload proof of payment with ease." },
+      { icon: UserPlusIcon, title: "Effortless Tenant Onboarding", desc: "Automate the welcome process by sharing SOPs, guides, and essential documents with new tenants." },
+    ],
+  };
+
   return (
-    <div className="flex flex-col min-h-screen bg-white text-gray-800">
-      {/* Hero Section */}
-      <section className="relative flex flex-col items-center justify-center min-h-[80vh] bg-gradient-to-br from-[#e4faf3] via-white to-[#fff7ea] text-center px-4 overflow-hidden">
-        {/* Decorative animated shapes */}
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none select-none">
-          <div className="absolute left-10 top-12 w-24 h-24 bg-[#219377]/10 rounded-full blur-2xl animate-pulse" />
-          <div className="absolute right-10 bottom-16 w-32 h-32 bg-[#ffbd59]/20 rounded-full blur-2xl animate-pulse-slow" />
+    // The component now assumes it's within a larger layout, as requested.
+    <div className="bg-white">
+      {/* 
+        SECTION 1: HERO
+        This is the hero section you approved.
+      */}
+      <section className="relative text-center px-4 py-24 md:py-32 overflow-hidden bg-gradient-to-b from-white to-[#e4faf3]/50">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute left-[-5%] top-1/4 w-48 h-48 bg-[#219377]/10 rounded-full blur-3xl animate-pulse-slow" />
+          <div className="absolute right-[-5%] bottom-1/4 w-48 h-48 bg-[#ffbd59]/10 rounded-full blur-3xl animate-pulse" />
         </div>
-        <div className="relative z-10 max-w-2xl">
-          <h1 className="text-5xl md:text-6xl font-extrabold text-[#219377] mb-4 drop-shadow-lg animate-fade-in">
-            Welcome to <span className="text-[#ffbd59]">{APP_NAME.split(' ')[0]}</span>
+        <div className="relative z-10 max-w-3xl mx-auto">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-[#219377] mb-4 tracking-tight">
+            The Future of Property <span className="text-[#ffbd59]">Maintenance</span> is Here.
           </h1>
-          <p className="text-xl md:text-2xl font-medium text-gray-700 mb-8 animate-fade-in delay-150">
-            The smartest way to handle property maintenance, leases, and tenants.
+          <p className="text-lg md:text-xl text-gray-700 mb-10">
+            Ditch the spreadsheets and chaotic texts. A smart, centralized platform for landlords, managers, and tenants.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10 animate-fade-in delay-200">
-            <Link to={ROUTES.REGISTER}>
-              <button className="bg-[#ffbd59] text-white text-lg font-bold px-8 py-3 rounded-xl shadow-md hover:bg-[#e0a84e] transition">
-                Get Started Free
-              </button>
-            </Link>
-            <Link to={ROUTES.LOGIN}>
-              <button className="bg-white text-[#219377] border-2 border-[#219377] text-lg font-bold px-8 py-3 rounded-xl shadow-md hover:bg-[#219377] hover:text-white transition">
-                Login
-              </button>
-            </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <ActionButton to={ROUTES.REGISTER} variant="primary">
+              Get Started Free
+            </ActionButton>
+            <ActionButton to={ROUTES.LOGIN} variant="secondary">
+              Login
+            </ActionButton>
           </div>
-          <p className="text-base text-[#219377] font-semibold uppercase tracking-wider animate-bounce">
+          <p className="mt-8 text-sm text-gray-500 font-medium">
             No credit card needed – try it risk-free!
           </p>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="bg-white py-20 px-6 md:px-20">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-bold text-center text-[#219377] mb-10 animate-fade-in">
-            Everything you need, <span className="text-[#ffbd59]">in one place</span>
-          </h2>
-          <div className="grid md:grid-cols-3 gap-10 text-center">
-            <div className="p-8 rounded-2xl shadow-lg border border-[#e4faf3] hover:scale-105 transform transition duration-300 bg-[#f7faf9] animate-fade-in delay-75">
-              <div className="text-5xl mb-4">🛠️</div>
-              <h3 className="text-2xl font-semibold text-[#219377] mb-2">Automated Issue Tracking</h3>
-              <p className="text-gray-600">Log, assign and monitor repairs. Stay ahead with instant notifications for every update.</p>
-            </div>
-            <div className="p-8 rounded-2xl shadow-lg border border-[#ffe8c0] hover:scale-105 transform transition duration-300 bg-[#fff7ea] animate-fade-in delay-150">
-              <div className="text-5xl mb-4">🔗</div>
-              <h3 className="text-2xl font-semibold text-[#ffbd59] mb-2">Tenant & Vendor Portal</h3>
-              <p className="text-gray-600">Empower tenants to report issues and vendors to respond instantly through their own dashboards.</p>
-            </div>
-            <div className="p-8 rounded-2xl shadow-lg border border-[#e4faf3] hover:scale-105 transform transition duration-300 bg-[#f7faf9] animate-fade-in delay-200">
-              <div className="text-5xl mb-4">📊</div>
-              <h3 className="text-2xl font-semibold text-[#219377] mb-2">Smart Analytics</h3>
-              <p className="text-gray-600">Visualize trends, costs, and response times. Make data-driven decisions to grow your business.</p>
-            </div>
+      {/* 
+        SECTION 2: FEATURES (WITH TABS)
+        This is the tabbed features section you liked.
+      */}
+      <section className="py-20 lg:py-28 bg-gray-50/70">
+        <div className="container mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+              A Feature for Every Challenge
+            </h2>
+            <p className="mt-4 text-lg text-gray-600">
+              One platform to manage your entire property lifecycle.
+            </p>
           </div>
-        </div>
-      </section>
 
-      {/* Built for Every Role Section */}
-      <section className="bg-gray-50 py-20">
-        <h2 className="text-3xl font-bold text-center mb-12 animate-fade-in">Built for Every Role</h2>
-        <div className="grid md:grid-cols-3 gap-8 px-6 max-w-6xl mx-auto">
-          {[
-            {
-              title: "Property Managers",
-              desc: "Handle dozens of properties effortlessly. Track issues, vendors, and leases from one dashboard.",
-              icon: "🏢",
-            },
-            {
-              title: "Landlords",
-              desc: "Stay informed without the micromanaging. Get auto-updates and performance logs anytime.",
-              icon: "👔",
-            },
-            {
-              title: "Tenants",
-              desc: "Request repairs in seconds. Get real-time progress without chasing anyone.",
-              icon: "🙋",
-            },
-          ].map((role, i) => (
-            <div key={i} className="bg-white p-6 rounded-xl shadow-md text-center animate-fade-in delay-100 hover:scale-105 transition">
-              <div className="text-4xl mb-3">{role.icon}</div>
-              <h4 className="text-xl font-semibold mb-2 text-[#219377]">{role.title}</h4>
-              <p className="text-gray-600">{role.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Callout Section */}
-      <section className="relative py-16 px-6 md:px-20 bg-gradient-to-r from-[#219377]/10 via-white to-[#ffbd59]/10 text-center">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#ffbd59] mb-4 animate-fade-in">Why Fixit?</h2>
-          <p className="text-lg md:text-xl text-gray-700 mb-6 animate-fade-in delay-100">
-            <span className="font-semibold text-[#219377]">Time saved, tenants happy, and properties in top shape.</span>
-            <br />With Fixit, you automate tedious tasks and unlock peace of mind.
-          </p>
-          <div className="mt-10 flex flex-col md:flex-row gap-6 justify-center text-left">
-            <div className="flex-1 rounded-xl border-l-4 border-[#219377] bg-white p-6 shadow-md animate-fade-in delay-200">
-              <div className="text-3xl mb-2">💡</div>
-              <div className="mb-1 text-lg font-bold text-[#219377]">AI Powered Suggestions</div>
-              <div className="text-gray-600">Let our system recommend the best vendors and solutions for every maintenance request.</div>
-            </div>
-            <div className="flex-1 rounded-xl border-l-4 border-[#ffbd59] bg-white p-6 shadow-md animate-fade-in delay-250">
-              <div className="text-3xl mb-2">⚡</div>
-              <div className="mb-1 text-lg font-bold text-[#ffbd59]">Lightning Fast Communication</div>
-              <div className="text-gray-600">Keep everyone in the loop with real-time updates and messaging.</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* More from Threalty Section - Restyled with Icons */}
-      <section className="bg-white py-16 px-4 text-center">
-        <h2 className="text-3xl font-bold mb-8 animate-fade-in">More from Threalty</h2>
-        <p className="text-gray-700 mb-10 animate-fade-in delay-100">
-          Explore our growing suite of AI-powered real estate tools.
-        </p>
-        <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-2"> {/* Changed to md:grid-cols-2 as there are now only 2 apps */}
-          {otherThrealtyApps.map((app, i) => (
-            <Link
-              to={app.link}
-              key={app.name}
-              className={`
-                flex flex-col items-start p-6 bg-gray-50 rounded-xl shadow hover:shadow-lg
-                transition transform hover:scale-105 animate-fade-in
-              `}
-              style={{
-                animationDelay: `${0.1 * i}s`, // Dynamic delay for animation
-                minHeight: "190px",
-              }}
-            >
-              <div className="mb-3 text-4xl">
-                {app.icon}
-              </div>
-              <h3 className="mb-2 text-xl font-bold text-[#219377]">{app.name}</h3>
-              <p className="text-gray-600">{app.desc}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Pricing CTA */}
-      <section className="py-16 px-6 md:px-20 bg-gradient-to-r from-[#ffbd59]/20 via-white to-[#219377]/10 text-center">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#219377] mb-4 animate-fade-in">Simple Pricing, Unlimited Value</h2>
-          <p className="text-lg md:text-xl text-gray-700 mb-8 animate-fade-in delay-100">
-            Pay as you grow. Flexible plans for landlords, managers and enterprises.<br />
-            <span className="font-semibold text-[#ffbd59]">Start free, no setup fees, cancel anytime.</span>
-          </p>
-          <Link to={ROUTES.PRICING}>
-            <button className="bg-[#219377] text-white text-lg font-bold px-10 py-3 rounded-xl shadow-md hover:bg-[#1a7c67] transition animate-fade-in delay-200">
-              View Pricing
+          <div className="flex justify-center mb-10 border-b border-gray-200">
+            <button onClick={() => setActiveTab('maintenance')} className={`px-6 py-3 font-semibold text-lg transition-colors duration-300 ${activeTab === 'maintenance' ? 'text-[#219377] border-b-2 border-[#219377]' : 'text-gray-500'}`}>
+              Maintenance
             </button>
-          </Link>
+            <button onClick={() => setActiveTab('tenant')} className={`px-6 py-3 font-semibold text-lg transition-colors duration-300 ${activeTab === 'tenant' ? 'text-[#219377] border-b-2 border-[#219377]' : 'text-gray-500'}`}>
+              Tenant & Leases
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {featureTabs[activeTab].map((feature, i) => (
+              <div key={feature.title} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 animate-fade-in-up" style={{ animationDelay: `${i * 0.1}s`}}>
+                <div className={`inline-block p-3 rounded-lg bg-gray-100 mb-4`}>
+                    <feature.icon className="w-8 h-8 text={activeTab === 'maintenance' ? '#219377' : '#ffbd59'}" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">{feature.title}</h3>
+                <p className="text-gray-600">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      
+      {/* 
+        SECTION 3: BUILT FOR EVERY ROLE
+        This is the "Built for Every Role" section you wanted to bring back.
+      */}
+      <section className="py-20 lg:py-28 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="order-2 lg:order-1">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
+                Built for <span className="text-[#219377]">Every Role</span> in Real Estate
+              </h2>
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 bg-[#219377]/10 p-3 rounded-lg"><BuildingOffice2Icon className="w-7 h-7 text-[#219377]" /></div>
+                  <div>
+                    <h4 className="text-xl font-bold text-gray-800">Property Managers</h4>
+                    <p className="text-gray-600 mt-1">Handle dozens of properties effortlessly from a single, powerful dashboard.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 bg-[#219377]/10 p-3 rounded-lg"><HomeModernIcon className="w-7 h-7 text-[#219377]" /></div>
+                  <div>
+                    <h4 className="text-xl font-bold text-gray-800">Landlords</h4>
+                    <p className="text-gray-600 mt-1">Stay informed with auto-updates and performance logs, without the micromanagement.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 bg-[#219377]/10 p-3 rounded-lg"><UserGroupIcon className="w-7 h-7 text-[#219377]" /></div>
+                  <div>
+                    <h4 className="text-xl font-bold text-gray-800">Tenants</h4>
+                    <p className="text-gray-600 mt-1">Request repairs in seconds and get real-time progress without chasing anyone.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=1470&auto=format&fit=crop" alt="Modern apartment" className="rounded-2xl shadow-xl object-cover w-full h-full" />
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Animations (kept as inline style for simplicity as they are specific to this page) */}
+      {/* 
+        SECTION 4: CALLOUT & MORE FROM THREALTY
+        This is the "Why Choose Us" section, modified to remove the two feature cards as requested.
+      */}
+      <section className="py-20 lg:py-28 bg-[#219377]">
+        <div className="container mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-white">
+              Why <span className="text-[#ffbd59]">Choose Us?</span>
+            </h2>
+            <p className="mt-4 text-lg text-white/80">
+              We build tools that save you time, reduce stress, and create happier tenants. It's that simple.
+            </p>
+          </div>
+
+          <div className="text-center">
+             <h3 className="text-2xl font-bold text-white mb-8">Explore our growing suite of AI-powered tools</h3>
+             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <Link to={ROUTES.COMING_SOON} className="group bg-white p-6 rounded-xl text-left transition hover:bg-gray-100">
+                    <h4 className="font-bold text-xl text-gray-800">Real Estate Genie</h4>
+                    <p className="text-gray-600 mt-1">Draft real estate documents faster with AI-powered templates.</p>
+                    <span className="flex items-center gap-2 mt-4 font-semibold text-[#219377] group-hover:gap-3 transition-all">
+                        Learn More <ArrowRightIcon className="w-4 h-4" />
+                    </span>
+                </Link>
+                <Link to={ROUTES.COMING_SOON} className="group bg-white p-6 rounded-xl text-left transition hover:bg-gray-100">
+                    <h4 className="font-bold text-xl text-gray-800">Real Estate AI Chatbot</h4>
+                    <p className="text-gray-600 mt-1">Get instant answers and property matches 24/7 with our smart assistant.</p>
+                    <span className="flex items-center gap-2 mt-4 font-semibold text-[#219377] group-hover:gap-3 transition-all">
+                        Learn More <ArrowRightIcon className="w-4 h-4" />
+                    </span>
+                </Link>
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 
+        SECTION 5: HOW IT WORKS
+        This is the 3-step "How It Works" section.
+      */}
+      <section className="py-20 lg:py-28 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+              Get Started in 3 Simple Steps
+            </h2>
+          </div>
+          <div className="relative grid md:grid-cols-3 gap-8 md:gap-16">
+            <div className="hidden md:block absolute top-1/2 left-0 w-full h-px bg-gray-200 -translate-y-1/2"></div>
+            <div className="relative text-center p-4 animate-fade-in-up" style={{ animationDelay: '0.1s'}}>
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-white border-2 border-gray-200 rounded-full text-2xl font-bold text-[#219377]">1</div>
+              <h3 className="text-xl font-bold mb-2">Submit Request</h3>
+              <p className="text-gray-600">Tenants or managers create a ticket with details and photos in seconds.</p>
+            </div>
+            <div className="relative text-center p-4 animate-fade-in-up" style={{ animationDelay: '0.2s'}}>
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-white border-2 border-gray-200 rounded-full text-2xl font-bold text-[#219377]">2</div>
+              <h3 className="text-xl font-bold mb-2">Assign & Track</h3>
+              <p className="text-gray-600">Assign to a vendor and track progress with real-time status updates for everyone.</p>
+            </div>
+            <div className="relative text-center p-4 animate-fade-in-up" style={{ animationDelay: '0.3s'}}>
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-white border-2 border-gray-200 rounded-full text-2xl font-bold text-[#219377]">3</div>
+              <h3 className="text-xl font-bold mb-2">Resolve & Verify</h3>
+              <p className="text-gray-600">Get notified upon completion, verify the work, and close the ticket. All logged.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 
+        SECTION 6: FINAL CTA
+        This is the final call-to-action section.
+      */}
+      <section className="py-20 lg:py-28 bg-white">
+        <div className="container mx-auto px-6">
+            <div className="relative text-center bg-gradient-to-r from-[#219377] to-[#1a7c67] text-white p-12 md:p-16 rounded-3xl shadow-2xl overflow-hidden">
+                <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-[#ffbd59]/20 rounded-full blur-2xl"></div>
+                <div className="relative z-10">
+                    <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
+                        Ready to Transform Your Properties?
+                    </h2>
+                    <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
+                        Join hundreds of landlords and managers who trust Threalty Fixit to bring efficiency and peace of mind to their work.
+                    </p>
+                    <ActionButton to={ROUTES.PRICING} variant="primary" className="text-lg">
+                        View Plans & Pricing
+                    </ActionButton>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      {/* 
+        CSS ANIMATIONS
+        Consolidated styles for all animations.
+      */}
       <style>
         {`
-        @keyframes fade-in {
-          0% { opacity: 0; transform: translateY(40px);}
-          100% { opacity: 1; transform: none;}
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
         }
-        .animate-fade-in {
-          animation: fade-in 0.8s cubic-bezier(0.39, 0.575, 0.565, 1) both;
+
+        @keyframes fade-in-up {
+          0% { opacity: 0; transform: translateY(30px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in.delay-75 { animation-delay: .075s; }
-        .animate-fade-in.delay-100 { animation-delay: .1s; }
-        .animate-fade-in.delay-150 { animation-delay: .15s; }
-        .animate-fade-in.delay-200 { animation-delay: .2s; }
-        .animate-fade-in.delay-250 { animation-delay: .25s; }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        }
         @keyframes pulse-slow {
-          0%, 100% { opacity: 0.4;}
-          50% { opacity: 1;}
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.2); opacity: 0.7; }
         }
-        .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+        .animate-pulse-slow { animation: pulse-slow 6s ease-in-out infinite; }
         `}
       </style>
     </div>

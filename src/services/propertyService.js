@@ -1,140 +1,290 @@
 // client/src/services/propertyService.js
 
 import api from "../api/axios.js";
-import axios from "axios"; // Import axios to check for cancel errors
+import axios from "axios";
+import { extractApiResponse, logApiResponse } from "../utils/apiUtils.js";
 
+const SERVICE_NAME = 'propertyService';
 const PROPERTY_BASE_URL = '/properties';
 
 /**
- * Retrieves a list of properties accessible by the authenticated user.
- * @param {object} [params={}] - Optional query parameters for filtering.
- * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
- * @returns {Promise<object[]>} An array of property objects.
+ * Retrieves a list of properties accessible by the authenticated user
+ * @param {Object} [params={}] - Query parameters
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<Object>} Paginated properties with metadata
+ * @throws {Error} If request fails
  */
 export const getAllProperties = async (params = {}, signal) => {
     try {
         const res = await api.get(PROPERTY_BASE_URL, { params, signal });
-        if (Array.isArray(res.data)) return res.data;
-        if (Array.isArray(res.data.properties)) return res.data.properties; // Handle paginated response
-        return [];
+        const { data, meta } = extractApiResponse(res.data);
+        
+        logApiResponse(SERVICE_NAME, 'getAllProperties', { data, meta });
+        
+        return {
+            properties: data || [],
+            total: meta.total || 0,
+            page: meta.page || 1,
+            limit: meta.limit || 10,
+            pages: meta.pages || 1
+        };
     } catch (error) {
-        // ✅ FIX: Check for cancellation errors first. If it's not a cancel error,
-        // then log it. In either case, re-throw the original error object
-        // so the calling component can inspect its 'name' or 'code'.
-        if (!axios.isCancel(error)) {
-            console.error("getAllProperties error:", error.response?.data || error.message);
+        if (axios.isCancel(error)) {
+            console.log('Request was canceled', error.message);
+            throw new Error('Request canceled');
         }
-        throw error; // Re-throw the original error
+        
+        console.error("getAllProperties error:", error);
+        throw error.response?.data?.message || error.message;
     }
 };
 
 /**
- * Retrieves details for a specific property.
- * @param {string} propertyId - The ID of the property.
- * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request.
- * @returns {Promise<object>} The property object.
+ * Retrieves details for a specific property
+ * @param {string} propertyId - Property ID
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<Object>} Property details
+ * @throws {Error} If request fails
  */
 export const getPropertyById = async (propertyId, signal) => {
     try {
         const res = await api.get(`${PROPERTY_BASE_URL}/${propertyId}`, { signal });
-        return res.data;
+        const { data } = extractApiResponse(res.data);
+        
+        logApiResponse(SERVICE_NAME, 'getPropertyById', { data });
+        
+        return data;
     } catch (error) {
-        if (!axios.isCancel(error)) {
-            console.error("getPropertyById error:", error.response?.data || error.message);
+        if (axios.isCancel(error)) {
+            console.log('Request was canceled', error.message);
+            throw new Error('Request canceled');
         }
-        throw error;
-    }
-};
-
-
-/**
- * Creates a new property.
- * @param {object} propertyData - Data for the new property.
- * @returns {Promise<object>} The created property object.
- */
-export const createProperty = async (propertyData) => {
-    try {
-        const res = await api.post(PROPERTY_BASE_URL, propertyData);
-        return res.data;
-    } catch (error) {
-        console.error("createProperty error:", error.response?.data || error.message);
+        
+        console.error("getPropertyById error:", error);
         throw error.response?.data?.message || error.message;
     }
 };
 
 /**
- * Updates details for a specific property.
- * @param {string} propertyId - The ID of the property to update.
- * @param {object} propertyData - Data to update.
- * @returns {Promise<object>} The updated property object.
+ * Creates a new property
+ * @param {Object} propertyData - Property data
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<Object>} Created property
+ * @throws {Error} If request fails
  */
-export const updateProperty = async (propertyId, propertyData) => {
+export const createProperty = async (propertyData, signal) => {
     try {
-        const res = await api.put(`${PROPERTY_BASE_URL}/${propertyId}`, propertyData);
-        return res.data;
+        const res = await api.post(PROPERTY_BASE_URL, propertyData, { signal });
+        const { data } = extractApiResponse(res.data);
+        
+        logApiResponse(SERVICE_NAME, 'createProperty', { data });
+        
+        return data;
     } catch (error) {
-        console.error("updateProperty error:", error.response?.data || error.message);
+        if (axios.isCancel(error)) {
+            console.log('Request was canceled', error.message);
+            throw new Error('Request canceled');
+        }
+        
+        console.error("createProperty error:", error);
         throw error.response?.data?.message || error.message;
     }
 };
 
 /**
- * Deletes a property.
- * @param {string} propertyId - The ID of the property to delete.
- * @returns {Promise<object>} Success message.
+ * Updates a property
+ * @param {string} propertyId - Property ID
+ * @param {Object} propertyData - Update data
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<Object>} Updated property
+ * @throws {Error} If request fails
+ */
+export const updateProperty = async (propertyId, propertyData, signal) => {
+    try {
+        const res = await api.put(`${PROPERTY_BASE_URL}/${propertyId}`, propertyData, { signal });
+        const { data } = extractApiResponse(res.data);
+        
+        logApiResponse(SERVICE_NAME, 'updateProperty', { data });
+        
+        return data;
+    } catch (error) {
+        if (axios.isCancel(error)) {
+            console.log('Request was canceled', error.message);
+            throw new Error('Request canceled');
+        }
+        
+        console.error("updateProperty error:", error);
+        throw error.response?.data?.message || error.message;
+    }
+};
+
+/**
+ * Deletes a property
+ * @param {string} propertyId - Property ID
+ * @returns {Promise<Object>} Success message
+ * @throws {Error} If request fails
  */
 export const deleteProperty = async (propertyId) => {
     try {
         const res = await api.delete(`${PROPERTY_BASE_URL}/${propertyId}`);
-        return res.data;
+        const response = extractApiResponse(res.data);
+        
+        logApiResponse(SERVICE_NAME, 'deleteProperty', response);
+        
+        return response; // Return full response for delete operations
     } catch (error) {
-        console.error("deleteProperty error:", error.response?.data || error.message);
+        console.error("deleteProperty error:", error);
         throw error.response?.data?.message || error.message;
     }
 };
 
 /**
- * Assigns a user to a property with specific roles.
- * @param {string} propertyId - The ID of the property.
- * @param {string} userIdToAssign - The ID of the user to assign.
- * @param {string[]} roles - Array of roles to assign (e.g., ['propertymanager'], ['tenant']).
- * @param {string} [unitId] - Optional. Unit ID if assigning a tenant to a specific unit.
- * @returns {Promise<object>} Success message and updated property.
+ * Assigns a user to a property with specific roles
+ * @param {string} propertyId - Property ID
+ * @param {string} userIdToAssign - User ID to assign
+ * @param {string[]} roles - Roles to assign
+ * @param {string} [unitId] - Unit ID (required for tenant role)
+ * @param {AbortSignal} [signal] - Optional AbortSignal to cancel the request
+ * @returns {Promise<Object>} Updated PropertyUser record
+ * @throws {Error} If request fails
  */
-export const assignUserToProperty = async (propertyId, userIdToAssign, roles, unitId = null) => {
+export const assignUserToProperty = async (propertyId, userIdToAssign, roles, unitId = null, signal) => {
     try {
         const payload = {
             userIdToAssign,
-            roles: roles.map(role => role.toLowerCase()), // Ensure roles are lowercase
-            ...(unitId && { unitId }) // Conditionally add unitId
+            roles: roles.map(role => role.toLowerCase()),
+            ...(unitId && { unitId })
         };
-        const res = await api.post(`${PROPERTY_BASE_URL}/${propertyId}/assign-user`, payload);
-        return res.data;
+        
+        const res = await api.post(`${PROPERTY_BASE_URL}/${propertyId}/assign-user`, payload, { signal });
+        const { data } = extractApiResponse(res.data);
+        
+        logApiResponse(SERVICE_NAME, 'assignUserToProperty', { data });
+        
+        return data;
     } catch (error) {
-        console.error("assignUserToProperty error:", error.response?.data || error.message);
+        if (axios.isCancel(error)) {
+            console.log('Request was canceled', error.message);
+            throw new Error('Request canceled');
+        }
+        
+        console.error("assignUserToProperty error:", error);
         throw error.response?.data?.message || error.message;
     }
 };
 
 /**
- * Removes (deactivates) a user's association with a property/unit for specific roles.
- * @param {string} propertyId - The ID of the property.
- * @param {string} userIdToRemove - The ID of the user to remove.
- * @param {string[]} rolesToRemove - Array of roles to remove (e.g., ['propertymanager'], ['tenant']).
- * @param {string} [unitId] - Optional. Required if 'tenant' role is being removed.
- * @returns {Promise<object>} Success message.
+ * Removes user roles from a property
+ * @param {string} propertyId - Property ID
+ * @param {string} userIdToRemove - User ID to remove
+ * @param {string[]} rolesToRemove - Roles to remove
+ * @param {string} [unitId] - Unit ID (for tenant role)
+ * @returns {Promise<Object>} Success message
+ * @throws {Error} If request fails
  */
 export const removeUserFromProperty = async (propertyId, userIdToRemove, rolesToRemove, unitId = null) => {
     try {
         const params = {
-            rolesToRemove: rolesToRemove.map(role => role.toLowerCase()), // Ensure roles are lowercase
-            ...(unitId && { unitId }) // Conditionally add unitId
+            rolesToRemove: rolesToRemove.map(role => role.toLowerCase()),
+            ...(unitId && { unitId })
         };
-        // Backend uses DELETE with query parameters
+        
         const res = await api.delete(`${PROPERTY_BASE_URL}/${propertyId}/remove-user/${userIdToRemove}`, { params });
-        return res.data;
+        const response = extractApiResponse(res.data);
+        
+        logApiResponse(SERVICE_NAME, 'removeUserFromProperty', response);
+        
+        return response; // Return full response for delete operations
     } catch (error) {
-        console.error("removeUserFromProperty error:", error.response?.data || error.message);
+        console.error("removeUserFromProperty error:", error);
         throw error.response?.data?.message || error.message;
     }
+};
+
+/**
+ * Formats property data for display
+ * @param {Object} property - Property object
+ * @returns {Object} Formatted property
+ */
+export const formatProperty = (property) => {
+    if (!property) return null;
+    
+    const address = property.address || {};
+    const fullAddress = [
+        address.street,
+        address.city,
+        address.state,
+        address.zipCode,
+        address.country
+    ].filter(Boolean).join(', ');
+    
+    return {
+        ...property,
+        fullAddress,
+        typeDisplay: capitalizeFirstLetter(property.propertyType || 'residential'),
+        unitCount: property.units?.length || 0,
+        formattedBudget: property.annualOperatingBudget ? 
+            `$${property.annualOperatingBudget.toLocaleString()}` : 
+            'Not specified',
+        status: property.isActive ? 'Active' : 'Inactive',
+        statusClass: property.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800',
+        hasAmenities: Array.isArray(property.amenities) && property.amenities.length > 0,
+        userRoles: Array.isArray(property.userRoles) ? property.userRoles : []
+    };
+};
+
+/**
+ * Groups properties by city or country
+ * @param {Array<Object>} properties - Array of properties
+ * @param {string} [groupBy='city'] - Field to group by ('city', 'country', 'type')
+ * @returns {Object} Properties grouped by the specified field
+ */
+export const groupProperties = (properties, groupBy = 'city') => {
+    if (!Array.isArray(properties) || properties.length === 0) return {};
+    
+    const grouped = {};
+    
+    properties.forEach(property => {
+        let key;
+        
+        if (groupBy === 'city') {
+            key = property.address?.city || 'Unspecified';
+        } else if (groupBy === 'country') {
+            key = property.address?.country || 'Unspecified';
+        } else if (groupBy === 'type') {
+            key = property.propertyType || 'residential';
+            key = capitalizeFirstLetter(key);
+        } else {
+            key = 'All Properties';
+        }
+        
+        if (!grouped[key]) {
+            grouped[key] = [];
+        }
+        
+        grouped[key].push(property);
+    });
+    
+    return grouped;
+};
+
+/**
+ * Helper function to capitalize first letter
+ * @param {string} str - String to capitalize
+ * @returns {string} Capitalized string
+ */
+const capitalizeFirstLetter = (str) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+export default {
+    getAllProperties,
+    getPropertyById,
+    createProperty,
+    updateProperty,
+    deleteProperty,
+    assignUserToProperty,
+    removeUserFromProperty,
+    formatProperty,
+    groupProperties
 };

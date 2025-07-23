@@ -1,12 +1,16 @@
-// src/pages/auth/EmailVerificationPage.jsx (or components/EmailVerification.jsx)
+// src/pages/auth/EmailVerificationPage.jsx
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Assuming you're using React Router
-import { verifyEmail } from '../../services/authService'; // Your frontend auth service
-import { CircularProgress, Alert, AlertTitle, Box, Typography, Button } from '@mui/material'; // Or your preferred UI library
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { verifyEmail } from '../../services/authService';
+import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
+import Button from '../../components/common/Button.jsx';
+import { Mail, CheckCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { ROUTES } from '../../utils/constants.js';
 
 const EmailVerificationPage = () => {
-  const { token } = useParams(); // Get the token from the URL
-  const navigate = useNavigate(); // For redirection after verification
+  const { token } = useParams();
+  const navigate = useNavigate();
+  const { showSuccess, showError } = useGlobalAlert();
 
   const [status, setStatus] = useState('verifying'); // 'verifying', 'success', 'error'
   const [message, setMessage] = useState('');
@@ -20,69 +24,79 @@ const EmailVerificationPage = () => {
       }
 
       try {
-        // Call your frontend auth service to hit the backend /api/auth/verify-email/:token
-        // Your backend already redirects, so this `verifyEmail` in frontend service
-        // will ideally just resolve if the redirect was successful (status 200/3xx).
-        // If the backend throws an error before redirect, this catch block will handle it.
-        await verifyEmail(token); // This service function makes the actual API call
+        const response = await verifyEmail(token);
         setStatus('success');
-        setMessage('Your email has been successfully verified!');
-        // Backend's redirect to /email-verified-success should handle the final display,
-        // but it's good to have a fallback here or for initial processing.
-        // Navigate to a success page or login after a short delay
+        setMessage(response.message || 'Your email has been successfully verified!');
+        
+        // Show success message through the global alert system
+        showSuccess('Email verified successfully! Redirecting to login...');
+        
+        // Navigate to login after a short delay
         setTimeout(() => {
-          navigate('/email-verified-success'); // Navigate to a success page
-        }, 3000); // Redirect after 3 seconds
+          navigate(ROUTES.LOGIN);
+        }, 3000);
       } catch (error) {
         setStatus('error');
         setMessage(error || 'Failed to verify email. The link might be invalid or expired.');
+        showError('Email verification failed: ' + error);
         console.error('Email verification error:', error);
       }
     };
 
     handleVerification();
-  }, [token, navigate]); // Re-run if token or navigate changes
+  }, [token, navigate, showSuccess, showError]);
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '80vh',
-        padding: 2,
-        textAlign: 'center'
-      }}
-    >
+    <div className="p-8 bg-white rounded-xl shadow-2xl border border-gray-100 max-w-md w-full text-center mx-auto">
       {status === 'verifying' && (
         <>
-          <CircularProgress sx={{ mb: 2 }} />
-          <Typography variant="h5">Verifying your email...</Typography>
+          <div className="flex justify-center mb-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700"></div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800">Verifying your email...</h2>
+          <p className="text-gray-600 mt-2">Please wait while we confirm your email address.</p>
         </>
       )}
+      
       {status === 'success' && (
-        <Alert severity="success" sx={{ maxWidth: 500 }}>
-          <AlertTitle>Success! 🎉</AlertTitle>
-          {message}
-          <Button variant="contained" sx={{ mt: 2 }} onClick={() => navigate('/login')}>
+        <>
+          <CheckCircle className="w-16 h-16 mx-auto text-green-700 mb-4" />
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Email Verified!</h2>
+          <p className="text-gray-600 mb-6">{message}</p>
+          <Button 
+            variant="primary" 
+            className="w-full mt-4"
+            onClick={() => navigate(ROUTES.LOGIN)}
+          >
             Go to Login
           </Button>
-        </Alert>
+        </>
       )}
+      
       {status === 'error' && (
-        <Alert severity="error" sx={{ maxWidth: 500 }}>
-          <AlertTitle>Verification Failed! 😟</AlertTitle>
-          {message}
-          <Button variant="outlined" sx={{ mt: 2 }} onClick={() => navigate('/login')}>
-            Back to Login
-          </Button>
-          <Button variant="outlined" sx={{ mt: 1 }} onClick={() => navigate('/resend-verification')}>
-            Resend Verification Email
-          </Button>
-        </Alert>
+        <>
+          <AlertTriangle className="w-16 h-16 mx-auto text-red-600 mb-4" />
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Verification Failed</h2>
+          <p className="text-gray-600 mb-6">{message}</p>
+          <div className="space-y-3">
+            <Button 
+              variant="primary" 
+              className="w-full"
+              onClick={() => navigate(ROUTES.LOGIN)}
+            >
+              Back to Login
+            </Button>
+            <Button 
+              variant="secondary" 
+              className="w-full"
+              onClick={() => navigate(ROUTES.RESEND_VERIFICATION)}
+            >
+              Resend Verification Email
+            </Button>
+          </div>
+        </>
       )}
-    </Box>
+    </div>
   );
 };
 

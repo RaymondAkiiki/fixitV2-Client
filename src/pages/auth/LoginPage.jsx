@@ -1,166 +1,223 @@
-// frontend/src/pages/Auth/LoginPage.jsx
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { loginUser } from '../../services/authService';
+import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
+import { useAuth } from '../../contexts/AuthContext.jsx';
+import useForm from '../../hooks/useForm';
+import Input from '../../components/common/Input.jsx';
+import Button from '../../components/common/Button.jsx';
+import GoogleAuthButton from '../../components/GoogleAuthButton.jsx';
+import { Eye, EyeOff } from 'lucide-react';
+import { ROUTES } from '../../utils/constants';
 
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext.jsx";
-import { useGlobalAlert } from "../../contexts/GlobalAlertContext.jsx";
-import useForm from "../../hooks/useForm.js";
-import Input from "../../components/common/Input.jsx";
-import Button from "../../components/common/Button.jsx";
-import { LogIn, Eye, EyeOff } from 'lucide-react';
-import { ROUTES, USER_ROLES } from "../../utils/constants.js";
-import frontendLogger from '../../utils/logger.js';
-
+// Validation function for login form
 const validateLoginForm = (values) => {
-    const errors = {};
-    if (!values.email.trim()) {
-        errors.email = "Email is required.";
-    } else if (!/\S+@\S+\.\S+/.test(values.email)) {
-        errors.email = "Please enter a valid email address.";
-    }
-    if (!values.password.trim()) {
-        errors.password = "Password is required.";
-    }
-    return errors;
+  const errors = {};
+  if (!values.email.trim()) {
+    errors.email = 'Email address is required.';
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
+    errors.email = 'Please enter a valid email address.';
+  }
+  if (!values.password.trim()) {
+    errors.password = 'Password is required.';
+  }
+  return errors;
 };
 
 const LoginPage = () => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { login: authLogin, user: authContextUser } = useAuth();
-    const { showError } = useGlobalAlert();
+  const { showSuccess, showError } = useGlobalAlert();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isAuthenticated } = useAuth(); // Add login method from auth context
+  const [showPassword, setShowPassword] = useState(false);
 
-    const [showPassword, setShowPassword] = useState(false);
+  // If already logged in, redirect to appropriate page
+  if (isAuthenticated) {
+    navigate(ROUTES.DASHBOARD);
+    return null;
+  }
 
-    const {
-        values,
-        errors,
-        handleChange,
-        handleSubmit,
-        isSubmitting,
-    } = useForm(
-        { email: "", password: "" },
-        validateLoginForm,
-        async (formValues) => {
-            frontendLogger.info('LoginPage: Handling login form submission.', { email: formValues.email });
-            try {
-                const loginResponse = await authLogin(formValues.email, formValues.password);
-                const loggedInUser = loginResponse.user;
+  const redirectPath = location.state?.from?.pathname || ROUTES.DASHBOARD;
 
-                const from = location.state?.from || ROUTES.HOME;
+  const {
+    values,
+    errors,
+    handleChange,
+    handleSubmit,
+    isSubmitting,
+  } = useForm(
+    { email: '', password: '' },
+    validateLoginForm,
+    async (formValues) => {
+      try {
+        const response = await loginUser(formValues.email, formValues.password);
 
-                // Role-based redirection logic
-                switch (loggedInUser.role?.toLowerCase()) {
-                    case USER_ROLES.TENANT:
-                        navigate(from.startsWith(ROUTES.TENANT_BASE) ? from : ROUTES.TENANT_DASHBOARD, { replace: true });
-                        break;
-                    case USER_ROLES.LANDLORD:
-                        navigate(from.startsWith(ROUTES.LANDLORD_BASE) ? from : ROUTES.LANDLORD_DASHBOARD, { replace: true });
-                        break;
-                    case USER_ROLES.PROPERTY_MANAGER:
-                        navigate(from.startsWith(ROUTES.PM_BASE) ? from : ROUTES.PM_DASHBOARD, { replace: true });
-                        break;
-                    case USER_ROLES.ADMIN:
-                        navigate(from.startsWith(ROUTES.ADMIN_BASE) ? from : ROUTES.ADMIN_DASHBOARD, { replace: true });
-                        break;
-                    default:
-                        navigate(from, { replace: true });
-                        break;
-                }
-
-            } catch (err) {
-                // This will now catch the error from AuthContext and display it
-                const errorMessage = err.response?.data?.message || err.message || "Login failed. Please check your credentials or contact support.";
-                showError(errorMessage);
-                frontendLogger.error("LoginPage: Login error during form submission.", {
-                    email: formValues.email,
-                    errorDetails: err.response?.data || err.message,
-                    statusCode: err.response?.status
-                });
-            }
+        // Update auth context
+        if (response.user) {
+          login(response.user, response.accessToken);
         }
-    );
 
-    return (
-        <div className="max-w-md w-full mx-auto space-y-8 bg-white p-8 rounded-xl shadow-xl border border-gray-100 text-center">
-            <LogIn className="w-16 h-16 mx-auto text-green-700 mb-4" />
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Welcome Back!</h2>
-            <p className="text-gray-600 mb-6">Sign in to your FixIt account.</p>
+        showSuccess(response.message || 'Login successful!');
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-                <Input
-                    label="Email Address"
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="username"
-                    value={values.email}
-                    onChange={handleChange}
-                    placeholder="Enter your email"
-                    required
-                    error={errors.email}
-                    disabled={isSubmitting}
-                />
+        // Redirect user based on role
+        navigateBasedOnRole(response.user);
+      } catch (err) {
+        console.error('Login error:', err);
+        showError(err.message || 'Failed to login. Please check your credentials.');
+      }
+    }
+  );
 
-                <div className="relative">
-                    <Input
-                        label="Password"
-                        id="password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="current-password"
-                        value={values.password}
-                        onChange={handleChange}
-                        placeholder="Enter your password"
-                        required
-                        error={errors.password}
-                        disabled={isSubmitting}
-                        className="pr-10"
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors top-8"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                        tabIndex={-1}
-                    >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                </div>
+  // Helper function to navigate based on user role
+  const navigateBasedOnRole = (user) => {
+    if (user?.role) {
+      const role = user.role.toLowerCase();
+      if (role === 'admin') {
+        navigate(ROUTES.ADMIN_DASHBOARD);
+      } else if (role === 'tenant') {
+        navigate(ROUTES.TENANT_DASHBOARD);
+      } else if (role === 'property_manager' || role === 'propertymanager') {
+        navigate(ROUTES.PM_DASHBOARD);
+      } else if (role === 'landlord') {
+        navigate(ROUTES.LANDLORD_DASHBOARD);
+      } else {
+        navigate(redirectPath);
+      }
+    } else {
+      navigate(redirectPath);
+    }
+  };
 
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                        {/* Remember me checkbox can be added here if needed */}
-                    </div>
-                    <Link
-                        to={ROUTES.FORGOT_PASSWORD}
-                        className="text-sm text-[#ffbd59] hover:underline font-medium"
-                    >
-                        Forgot Password?
-                    </Link>
-                </div>
+  // Handle successful Google authentication
+  const handleGoogleSuccess = (response) => {
+    try {
+      // Update auth context with Google login response
+      if (response.user) {
+        login(response.user, response.accessToken);
+      }
 
-                <Button
-                    type="submit"
-                    variant="primary"
-                    className="w-full py-3"
-                    loading={isSubmitting}
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? "Signing In..." : "Sign In"}
-                </Button>
-            </form>
+      // Navigate based on role
+      navigateBasedOnRole(response.user);
+    } catch (error) {
+      console.error('Error handling Google success:', error);
+      showError('An error occurred during Google sign-in. Please try again.');
+    }
+  };
 
-            <div className="flex justify-center mt-6">
-                <p className="text-sm text-gray-600">
-                    Don’t have an account?{" "}
-                    <Link to={ROUTES.REGISTER} className="text-[#ffbd59] hover:underline font-medium">
-                        Register
-                    </Link>
-                </p>
-            </div>
+  // Handle Google authentication errors
+  const handleGoogleError = (error) => {
+    console.error('Google authentication error:', error);
+    // Error is already handled by GoogleAuthButton, so we don't need to show it again
+  };
+
+  return (
+    <div className="p-8 bg-white rounded-xl shadow-2xl border border-gray-100 max-w-md w-full mx-auto">
+      <h2 className="text-3xl font-extrabold text-gray-900 mb-2 text-center">
+        Welcome Back
+      </h2>
+      <p className="text-center text-gray-600 mb-8">
+        Sign in to your account to continue
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Input
+          label="Email Address"
+          id="email"
+          name="email"
+          type="email"
+          value={values.email}
+          onChange={handleChange}
+          placeholder="your.email@example.com"
+          required
+          error={errors.email}
+          disabled={isSubmitting}
+          autoComplete="email"
+        />
+
+        <div className="relative">
+          <Input
+            label="Password"
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            value={values.password}
+            onChange={handleChange}
+            placeholder="Your password"
+            required
+            error={errors.password}
+            disabled={isSubmitting}
+            autoComplete="current-password"
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors top-8"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
         </div>
-    );
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <input
+              id="remember-me"
+              name="remember-me"
+              type="checkbox"
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+              Remember me
+            </label>
+          </div>
+          <div className="text-sm">
+            <Link to={ROUTES.FORGOT_PASSWORD} className="font-medium text-green-600 hover:text-green-500">
+              Forgot your password?
+            </Link>
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full py-3"
+          loading={isSubmitting}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Signing in..." : "Sign in"}
+        </Button>
+      </form>
+
+      <div className="mt-6">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-white text-gray-500">Or continue with</span>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <GoogleAuthButton
+            text="Sign in with Google"
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            usePopup={false} // Set to true if you prefer popup mode
+          />
+        </div>
+      </div>
+
+      <p className="mt-6 text-center text-sm text-gray-600">
+        Don't have an account?{' '}
+        <Link to={ROUTES.REGISTER} className="font-medium text-green-600 hover:text-green-500">
+          Sign up
+        </Link>
+      </p>
+    </div>
+  );
 };
 
 export default LoginPage;
