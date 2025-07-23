@@ -9,7 +9,7 @@ export const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
   const { showError, showSuccess } = useGlobalAlert();
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   
   // State management
   const [notifications, setNotifications] = useState([]);
@@ -25,11 +25,6 @@ export const NotificationProvider = ({ children }) => {
   // For polling unread count
   const pollingIntervalRef = useRef(null);
   const pollingDelayMs = 30000; // 30 seconds
-  
-  // Check if component should render based on auth state
-  if (authLoading) {
-    return null; // Don't render anything while auth is loading
-  }
   
   /**
    * Fetch notifications with optional filters
@@ -329,7 +324,7 @@ export const NotificationProvider = ({ children }) => {
   
   return (
     <NotificationContext.Provider value={value}>
-      {children}
+      {authLoading ? null : children}
     </NotificationContext.Provider>
   );
 };

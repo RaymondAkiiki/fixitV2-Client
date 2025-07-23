@@ -8,7 +8,7 @@ import * as propertyService from '../../services/propertyService';
 import { PROPERTY_USER_ROLES } from '../../utils/constants';
 
 const InvitationForm = ({ onSuccess }) => {
-  const { register, handleSubmit, watch, reset, formState: { errors }, setValue } = useForm();
+  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm();
   const { showSuccess, showError } = useGlobalAlert();
   
   const [loading, setLoading] = useState(false);
@@ -28,7 +28,7 @@ const InvitationForm = ({ onSuccess }) => {
       try {
         const response = await propertyService.getAllProperties();
         setProperties(response.data || []);
-      } catch (error) {
+      } catch {
         showError('Failed to load properties');
       } finally {
         setLoadingProperties(false);
@@ -50,7 +50,7 @@ const InvitationForm = ({ onSuccess }) => {
       try {
         const response = await propertyService.getPropertyUnits(selectedProperty);
         setUnits(response.data || []);
-      } catch (error) {
+      } catch {
         showError('Failed to load units');
       } finally {
         setLoadingUnits(false);

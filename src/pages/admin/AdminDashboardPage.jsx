@@ -10,7 +10,7 @@ import { ROUTES, USER_ROLES } from '../../utils/constants.js';
 import { formatDate } from '../../utils/helpers.js';
 
 // Services
-import DashboardService from '../../services/dashboardService.js';
+import * as DashboardService from '../../services/dashboardService.js';
 import * as adminService from '../../services/adminService.js';
 import { approveUser } from '../../services/userService.js';
 

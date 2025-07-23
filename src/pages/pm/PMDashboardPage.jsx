@@ -6,8 +6,8 @@ import { Home, Users, Wrench, Building2, FileText, DollarSign, CalendarDays } fr
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
 
-// Import the new DashboardService
-import DashboardService from '../../services/DashboardService.js';
+// Import the dashboard service
+import * as DashboardService from '../../services/dashboardService.js';
 
 // Component Imports
 import StatCard from '../../components/StatCard.jsx';

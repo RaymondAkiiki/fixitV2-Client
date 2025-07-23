@@ -58,7 +58,7 @@ export const extractApiResponse = (response) => {
  * @param {Object} data - Response data
  */
 export const logApiResponse = (service, method, data) => {
-  if (process.env.NODE_ENV !== 'production') {
+  if (import.meta.env.DEV) {
     console.debug(`API Response [${service}.${method}]`, data);
   }
 };
