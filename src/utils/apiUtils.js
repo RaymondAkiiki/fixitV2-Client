@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 /**
  * Extracts and normalizes data from API responses to provide a consistent structure
  * @param {Object} response - The API response object
@@ -61,4 +63,20 @@ export const logApiResponse = (service, method, data) => {
   if (import.meta.env.DEV) {
     console.debug(`API Response [${service}.${method}]`, data);
   }
+};
+
+/**
+ * Standardized error handler for API requests
+ * @param {Error} error - The error object
+ * @param {string} context - Context for logging (e.g., 'getAllProperties')
+ * @returns {never} - Always throws
+ */
+export const handleApiError = (error, context) => {
+  if (axios.isCancel?.(error)) {
+    console.log('Request was canceled', error.message);
+    throw new Error('Request canceled');
+  }
+  
+  console.error(`${context} error:`, error);
+  throw error.response?.data?.message || error.message;
 };
