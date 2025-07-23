@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as adminService from "../../services/adminService.js";
 import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
 import LoadingSpinner from '../../components/common/LoadingSpinner.jsx';
-import { formatDate, formatDateTime } from '../../utils/helpers.js';
+import { formatDateTime } from '../../utils/helpers.js';
 import useDebounce from '../../hooks/useDebounce.js';
 import { Clock, User, Activity, Database, Search, FileText } from 'lucide-react';
 
@@ -201,7 +201,7 @@ const AdminAuditLogPage = () => {
       // If it's already a string, parse it
       const detailsObj = typeof details === 'string' ? JSON.parse(details) : details;
       return JSON.stringify(detailsObj, null, 2);
-    } catch (error) {
+    } catch {
       // If parsing fails, return as is
       return typeof details === 'string' ? details : JSON.stringify(details);
     }

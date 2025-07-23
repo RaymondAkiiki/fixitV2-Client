@@ -212,7 +212,7 @@ export const useRentScheduleMutations = () => {
   const updateSchedule = useMutation({
     mutationFn: ({ scheduleId, updateData }) => 
       rentService.updateRentSchedule(scheduleId, updateData),
-    onSuccess: (data, { scheduleId }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rentSchedules'] });
       showSuccess("Rent schedule updated successfully!");
     },

@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useGlobalAlert } from '../../contexts/GlobalAlertContext.jsx';
 
 // Import the dashboard service
-import * as DashboardService from '../../services/dashboardService.js';
+import DashboardService from '../../services/dashboardService.js';
 
 // Component Imports
 import StatCard from '../../components/StatCard.jsx';

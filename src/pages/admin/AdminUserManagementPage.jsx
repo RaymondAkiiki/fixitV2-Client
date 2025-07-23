@@ -104,7 +104,11 @@ const AdminUserManagementPage = () => {
   });
   const handleToggleStatus = () => executeAction(async () => {
     const isActivating = !selectedUser.isActive;
-    await adminService.toggleUserStatus(selectedUser._id, isActivating);
+    if (isActivating) {
+      await adminService.activateUser(selectedUser._id);
+    } else {
+      await adminService.deactivateUser(selectedUser._id);
+    }
     showSuccess(`User ${isActivating ? 'activated' : 'deactivated'} successfully!`);
   });
   const handleApproveUser = () => executeAction(async () => {
