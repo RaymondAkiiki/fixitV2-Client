@@ -1,6 +1,6 @@
 //client/src/App.jsx
 
-import React from "react";
+import React, { Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 // Import ProtectedRoute and InitialRedirect
@@ -16,67 +16,73 @@ import PropertyManagerLayout from './layout/PropertyManagerLayout.jsx';
 import LandlordLayout from './layout/LandlordLayout.jsx';
 import TenantLayout from './layout/TenantLayout.jsx';
 
-// Auth Pages
-import WelcomePage from "./pages/auth/WelcomePage.jsx";
-import LoginPage from "./pages/auth/LoginPage.jsx";
-import RegisterPage from "./pages/auth/RegisterPage.jsx";
-import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage.jsx";
-import SetPasswordPage from './pages/auth/SetPasswordPage.jsx';
-import EmailVerificationPage from './pages/auth/EmailVerificationPage'; 
-import EmailVerifiedSuccessPage from './pages/auth/EmailVerifiedSuccessPage';
-import ResendVerificationPage from './pages/auth/ResendVerificationPage';
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+  </div>
+);
+
+// Lazy load pages - Auth Pages
+const WelcomePage = React.lazy(() => import("./pages/auth/WelcomePage.jsx"));
+const LoginPage = React.lazy(() => import("./pages/auth/LoginPage.jsx"));
+const RegisterPage = React.lazy(() => import("./pages/auth/RegisterPage.jsx"));
+const ForgotPasswordPage = React.lazy(() => import("./pages/auth/ForgotPasswordPage.jsx"));
+const SetPasswordPage = React.lazy(() => import('./pages/auth/SetPasswordPage.jsx'));
+const EmailVerificationPage = React.lazy(() => import('./pages/auth/EmailVerificationPage')); 
+const EmailVerifiedSuccessPage = React.lazy(() => import('./pages/auth/EmailVerifiedSuccessPage'));
+const ResendVerificationPage = React.lazy(() => import('./pages/auth/ResendVerificationPage'));
 
 // Public Pages (no authentication required)
-import InviteAcceptancePage from './pages/public/InviteAcceptancePage.jsx';
-import PublicRequestViewPage from './pages/public/PublicRequestViewPage.jsx';
-import PublicScheduledMaintenanceViewPage from "./pages/public/PublicScheduledMaintenanceViewPage.jsx";
+const InviteAcceptancePage = React.lazy(() => import('./pages/public/InviteAcceptancePage.jsx'));
+const PublicRequestViewPage = React.lazy(() => import('./pages/public/PublicRequestViewPage.jsx'));
+const PublicScheduledMaintenanceViewPage = React.lazy(() => import("./pages/public/PublicScheduledMaintenanceViewPage.jsx"));
 
 // Error Pages
-import NotFoundPage from "./pages/errors/NotFoundPage.jsx";
-import AccessDeniedPage from "./pages/errors/AccessDeniedPage.jsx";
+const NotFoundPage = React.lazy(() => import("./pages/errors/NotFoundPage.jsx"));
+const AccessDeniedPage = React.lazy(() => import("./pages/errors/AccessDeniedPage.jsx"));
 
-//Admin components
-import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
-import AdminSystemPage from './pages/admin/AdminSystemPage.jsx';
-import AdminProfilePage from './pages/admin/AdminProfilePage.jsx';
-import AdminUserManagementPage from './pages/admin/AdminUserManagementPage';
-import AdminPropertyManagementPage from './pages/admin/AdminPropertyManagementPage';
-import AdminUnitManagementPage from './pages/admin/AdminUnitManagementPage';
-import AdminRequestManagementPage from './pages/admin/AdminRequestManagementPage';
-import AdminVendorManagementPage from './pages/admin/AdminVendorManagementPage';
-import AdminInviteManagementPage from './pages/admin/AdminInviteManagementPage';
-import AdminAuditLogPage from './pages/admin/AdminAuditLogPage';
-import AdminMediaManagementPage from './pages/admin/AdminMediaManagementPage';
-import AdminOnboardingManagementPage from './pages/admin/AdminOnboardingManagementPage';
-import AdminMessageManagementPage from './pages/admin/AdminMessageManagementPage';
-import AdminRentManagementPage from './pages/admin/AdminRentManagementPage';
-import AdminLeaseManagementPage from './pages/admin/AdminLeaseManagementPage';
-import AdminScheduledMaintenanceManagementPage from './pages/admin/AdminScheduledMaintenanceManagementPage';
-import AdminReportsManagementPage from './pages/admin/AdminReportsManagementPage.jsx';
+//Admin components - Lazy loaded
+const AdminDashboardPage = React.lazy(() => import('./pages/admin/AdminDashboardPage.jsx'));
+const AdminSystemPage = React.lazy(() => import('./pages/admin/AdminSystemPage.jsx'));
+const AdminProfilePage = React.lazy(() => import('./pages/admin/AdminProfilePage.jsx'));
+const AdminUserManagementPage = React.lazy(() => import('./pages/admin/AdminUserManagementPage'));
+const AdminPropertyManagementPage = React.lazy(() => import('./pages/admin/AdminPropertyManagementPage'));
+const AdminUnitManagementPage = React.lazy(() => import('./pages/admin/AdminUnitManagementPage'));
+const AdminRequestManagementPage = React.lazy(() => import('./pages/admin/AdminRequestManagementPage'));
+const AdminVendorManagementPage = React.lazy(() => import('./pages/admin/AdminVendorManagementPage'));
+const AdminInviteManagementPage = React.lazy(() => import('./pages/admin/AdminInviteManagementPage'));
+const AdminAuditLogPage = React.lazy(() => import('./pages/admin/AdminAuditLogPage'));
+const AdminMediaManagementPage = React.lazy(() => import('./pages/admin/AdminMediaManagementPage'));
+const AdminOnboardingManagementPage = React.lazy(() => import('./pages/admin/AdminOnboardingManagementPage'));
+const AdminMessageManagementPage = React.lazy(() => import('./pages/admin/AdminMessageManagementPage'));
+const AdminRentManagementPage = React.lazy(() => import('./pages/admin/AdminRentManagementPage'));
+const AdminLeaseManagementPage = React.lazy(() => import('./pages/admin/AdminLeaseManagementPage'));
+const AdminScheduledMaintenanceManagementPage = React.lazy(() => import('./pages/admin/AdminScheduledMaintenanceManagementPage'));
+const AdminReportsManagementPage = React.lazy(() => import('./pages/admin/AdminReportsManagementPage.jsx'));
 
+// General/Shared Feature Pages (used across multiple roles) - Lazy loaded
+const PropertyListPage = React.lazy(() => import('./pages/properties/PropertyListPage.jsx'));
+const PropertyDetailPage = React.lazy(() => import('./pages/properties/PropertyDetailPage.jsx'));
+const PropertyFormPage = React.lazy(() => import('./pages/properties/PropertyFormPage.jsx'));
+const UnitListPage = React.lazy(() => import('./pages/properties/UnitListPage.jsx')); // Units are nested under properties
+const UnitDetailPage = React.lazy(() => import('./pages/properties/UnitDetailPage.jsx'));
+const UnitFormPage = React.lazy(() => import('./pages/properties/UnitFormPage.jsx'));
 
-// General/Shared Feature Pages (used across multiple roles)
-import PropertyListPage from './pages/properties/PropertyListPage.jsx';
-import PropertyDetailPage from './pages/properties/PropertyDetailPage.jsx';
-import PropertyFormPage from './pages/properties/PropertyFormPage.jsx';
-import UnitListPage from './pages/properties/UnitListPage.jsx'; // Units are nested under properties
-import UnitDetailPage from './pages/properties/UnitDetailPage.jsx';
-import UnitFormPage from './pages/properties/UnitFormPage.jsx';
+const RequestListPage = React.lazy(() => import('./pages/requests/RequestListPage.jsx'));
+const RequestDetailPage = React.lazy(() => import('./pages/requests/RequestDetailPage.jsx'));
+const RequestFormPage = React.lazy(() => import('./pages/requests/RequestFormPage.jsx'));
 
-import RequestListPage from './pages/requests/RequestListPage.jsx';
-import RequestDetailPage from './pages/requests/RequestDetailPage.jsx';
-import RequestFormPage from './pages/requests/RequestFormPage.jsx';
+const ScheduledMaintenanceListPage = React.lazy(() => import('./pages/scheduled-maintenance/ScheduledMaintenanceListPage.jsx'));
+const ScheduledMaintenanceDetailPage = React.lazy(() => import('./pages/scheduled-maintenance/ScheduledMaintenanceDetailPage.jsx'));
+const ScheduledMaintenanceFormPage = React.lazy(() => import('./pages/scheduled-maintenance/ScheduledMaintenanceFormPage.jsx'));
 
-import ScheduledMaintenanceListPage from './pages/scheduled-maintenance/ScheduledMaintenanceListPage.jsx';
-import ScheduledMaintenanceDetailPage from './pages/scheduled-maintenance/ScheduledMaintenanceDetailPage.jsx';
-import ScheduledMaintenanceFormPage from './pages/scheduled-maintenance/ScheduledMaintenanceFormPage.jsx';
+const VendorListPage = React.lazy(() => import('./pages/vendors/VendorListPage.jsx'));
+const VendorDetailPage = React.lazy(() => import('./pages/vendors/VendorDetailPage.jsx'));
+const VendorFormPage = React.lazy(() => import('./pages/vendors/VendorFormPage.jsx'));
 
-import VendorListPage from './pages/vendors/VendorListPage.jsx';
-import VendorDetailPage from './pages/vendors/VendorDetailPage.jsx';
-import VendorFormPage from './pages/vendors/VendorFormPage.jsx';
-
-import UserListPage from './pages/users/UserListPage.jsx';
-import UserDetailPage from './pages/users/UserDetailPage.jsx';
+const UserListPage = React.lazy(() => import('./pages/users/UserListPage.jsx'));
+const UserDetailPage = React.lazy(() => import('./pages/users/UserDetailPage.jsx'));
 import UserFormPage from './pages/users/UserFormPage.jsx';
 
 import InviteListPage from './pages/invites/InviteListPage.jsx';
@@ -134,7 +140,8 @@ import TestPage2 from "./pages/extras/TestPage2.jsx";
 
 const App = () => {
   return (
-    <Routes>
+    <Suspense fallback={<LoadingSpinner />}>
+      <Routes>
       {/* Initial Redirect: Handles redirection based on auth status and role */}
       <Route path={ROUTES.HOME} element={<InitialRedirect />} />
 
@@ -415,6 +422,7 @@ const App = () => {
         <Route path="*" element={<NotFoundPage />} /> {/* Fallback for any unmatched route */}
       </Route>
     </Routes>
+    </Suspense>
   );
 };
 
